@@ -1,0 +1,9 @@
+{
+  "whisper_model": "large-v3",
+  "ffmpeg_path": "C:/ffmpeg-2025-05-15-git-12b853530a-full_build/bin/ffmpeg.exe",
+  "input_video": "video.mp4",
+  "output_audio": "temp_audio.wav",
+  "output_srt": "subtitles.srt",
+  "language": "auto",
+  "translation_target": null
+}

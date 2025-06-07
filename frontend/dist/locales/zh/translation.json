@@ -1,0 +1,9 @@
+{
+  "landing.welcomeTitle": "⚡ 仅供测试的文本 ⚡",
+  "landing.subtitle": "最智能的希伯来语视频、音频和 WhatsApp 消息转录系统",
+  "landing.cta": "立即免费开始",
+  "dashboard.greeting": "你好 {{name}}！👋",
+  "dashboard.myTranscriptions": "我的转录",
+  "upload.title": "上传视频进行转录",
+  "upload.button": "开始转录"
+}

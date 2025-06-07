@@ -1,0 +1,161 @@
+{
+  "hero": {
+    "badge": "La technologie la plus avancée",
+    "title1": "Transcription intelligente",
+    "title2": "par intelligence artificielle",
+    "description": "Le système le plus intelligent pour la transcription de vidéos, d'audios et de messages WhatsApp en hébreu. Précision de plus de 98% et rapidité qui vous fait gagner des heures de travail.",
+    "startFree": "Commencer gratuitement",
+    "liveTranscription": "Transcription en direct en temps réel",
+    "feature1": "Aucune inscription",
+    "feature2": "Première transcription gratuite",
+    "feature3": "Résultats instantanés"
+  },
+  "stats": {
+    "completed": "Transcriptions réalisées",
+    "accuracy": "Précision moyenne",
+    "languages": "Langues prises en charge",
+    "availability": "Disponibilité"
+  },
+  "status": {
+    "completed": "Terminé",
+    "done": "Fait",
+    "processing": "En traitement",
+    "failed": "Échec",
+    "unknown": "Inconnu"
+  },
+  "demos": {
+    "youtube": "Vidéo YouTube",
+    "zoom": "Réunion Zoom",
+    "whatsapp": "Messages WhatsApp"
+  },
+  "common": {
+    "accuracy": "Précision"
+  },
+  "features": {
+    "title": "Des avantages qui vont changer votre vie",
+    "subtitle": "Une technologie avancée qui comprend l’hébreu comme un locuteur natif",
+    "whatsapp": {
+      "title": "Transcription des messages WhatsApp",
+      "desc": "Téléchargez une capture d'écran d'une conversation WhatsApp et obtenez une transcription parfaite de tous les messages",
+      "badge": "Nouveau !"
+    },
+    "summary": {
+      "title": "Résumé intelligent par IA",
+      "desc": "Recevez un résumé automatique de la transcription avec les points clés et les idées importantes"
+    },
+    "multilang": {
+      "title": "Support de 15 langues",
+      "desc": "Transcription en hébreu, anglais, arabe, russe, français, espagnol et plus encore"
+    },
+    "speed": {
+      "title": "Vitesse éclair",
+      "desc": "Transcription d'une vidéo d'une heure en seulement 2-3 minutes avec plus de 98% de précision"
+    },
+    "live": {
+      "title": "Transcription en direct",
+      "desc": "Transcription en temps réel pour les réunions Zoom, Teams ou tout appel en direct",
+      "badge": "Pro"
+    },
+    "export": {
+      "title": "Exportation vers tous les formats",
+      "desc": "SRT, TXT, PDF, DOCX, etc. Inclut la vidéo avec sous-titres intégrés"
+    }
+  },
+  "usecases": {
+    "title": "À qui cela convient-il ?",
+    "subtitle": "Des solutions adaptées à chaque type d’utilisateur",
+    "creators": {
+      "title": "Créateurs de contenu",
+      "desc": "Transcrivez les vidéos YouTube, les podcasts et les courts métrages à une vitesse fulgurante",
+      "features": ["Transcription automatique", "Sous-titres intégrés", "Export SRT"]
+    },
+    "business": {
+      "title": "Professionnels",
+      "desc": "Transcrivez les réunions, les appels clients et les enregistrements importants pour une documentation parfaite",
+      "features": ["Transcription Zoom/Teams", "Résumé IA", "Partage sécurisé"]
+    },
+    "academia": {
+      "title": "Chercheurs et universitaires",
+      "desc": "Transcrivez les interviews, les conférences et les recherches avec une précision scientifique",
+      "features": ["Précision 98%+", "Support terminologique", "Exportation académique"]
+    }
+  },
+  "testimonials": {
+    "title": "Ce que disent les clients",
+    "subtitle": "Des milliers de clients satisfaits utilisent le système chaque jour",
+    "t1": {
+      "name": "Dr Sarah Cohen",
+      "role": "Chercheuse à l’Université hébraïque",
+      "content": "Le système m’a permis d’économiser des dizaines d’heures par semaine. La précision est incroyable et l’interface très conviviale."
+    },
+    "t2": {
+      "name": "Liran Yaakobi",
+      "role": "Créateur de contenu numérique",
+      "content": "La transcription de mes vidéos n’a jamais été aussi simple. Le système reconnaît parfaitement l’hébreu."
+    },
+    "t3": {
+      "name": "Michal Barak",
+      "role": "Journaliste",
+      "content": "Je l’utilise pour transcrire des interviews. Cela me fait gagner beaucoup de temps et me permet de me concentrer sur l’écriture."
+    }
+  },
+  "cta": {
+    "title": "Prêt à économiser des heures de travail ?",
+    "subtitle": "Commencez dès maintenant avec une première transcription gratuite. Sans engagement, sans carte bancaire.",
+    "button1": "Commencer la transcription maintenant",
+    "button2": "Essayer la transcription WhatsApp"
+  },
+  "footer": {
+    "brand": "Transcription intelligente",
+    "desc": "La solution la plus avancée pour la transcription automatique en hébreu",
+    "features": "Fonctionnalités",
+    "video": "Transcription vidéo",
+    "whatsapp": "Transcription WhatsApp",
+    "live": "Transcription en direct",
+    "summary": "Résumé IA",
+    "support": "Service client",
+    "help": "Centre d'aide",
+    "contact": "Nous contacter",
+    "guides": "Guides d’utilisation",
+    "api": "Documentation API",
+    "company": "Société",
+    "about": "À propos",
+    "blog": "Blog",
+    "career": "Carrières",
+    "privacy": "Confidentialité",
+    "copyright": "Tous droits réservés."
+  },
+  "sidebar": {
+    "home": "Accueil",
+    "upload": "Téléverser une vidéo",
+    "whatsapp": "Transcription WhatsApp",
+    "transcriptions": "Mes transcriptions",
+    "live": "Transcription en direct",
+    "pricing": "Tarification",
+    "logout": "Se déconnecter",
+    "login": "Se connecter",
+    "new": "Nouveau !",
+    "pro": "Pro"
+  },
+  "upload": {
+    "title": "Téléverser une vidéo pour transcription",
+    "subtitle": "Téléversez un fichier vidéo pour une transcription automatique et précise",
+    "startTranscription": "Commencer la transcription",
+    "embedSubtitles": "Intégrer des sous-titres",
+    "embedSubtitlesDesc": "Créer un fichier vidéo avec des sous-titres intégrés",
+    "translateTo": "Traduire en",
+    "language": "Langue",
+    "language_auto": "Détection automatique",
+    "language_hebrew": "Hébreu",
+    "language_english": "Anglais",
+    "language_arabic": "Arabe",
+    "language_russian": "Russe",
+    "language_french": "Français",
+    "translate_none": "Pas de traduction",
+    "selectLanguage": "Choisir une langue",
+    "selectTranslate": "Choisir une langue de traduction",
+    "loginPromptTitle": "Pour enregistrer vos transcriptions",
+    "loginPromptDesc": "Connectez-vous pour accéder à vos transcriptions à tout moment et conserver votre historique.",
+    "processing": "Traitement..."
+  }
+}
