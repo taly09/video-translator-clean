@@ -88,7 +88,16 @@ export default function Landing() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-100 via-white to-slate-50 text-slate-800" dir={i18n.language === "he" ? "rtl" : "ltr"}>
+<div
+  className="min-h-screen landing-bg text-slate-800"
+  onMouseMove={(e) => {
+    const x = (e.clientX / window.innerWidth) * 100;
+    const y = (e.clientY / window.innerHeight) * 100;
+    document.documentElement.style.setProperty("--x", `${x}%`);
+    document.documentElement.style.setProperty("--y", `${y}%`);
+  }}
+  dir={i18n.language === "he" ? "rtl" : "ltr"}
+>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap');
 
@@ -132,6 +141,11 @@ export default function Landing() {
           background-color: #0ea5e9;
           color: white;
         }
+        .landing-bg {
+  background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), #e0f2fe, #fff);
+  transition: background 0.3s ease;
+}
+
       `}</style>
 
       {/* Hero */}

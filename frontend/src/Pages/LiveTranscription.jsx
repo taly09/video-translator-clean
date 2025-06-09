@@ -12,8 +12,11 @@ import {
   Select, SelectContent, SelectItem,
   SelectTrigger, SelectValue
 } from "@/components/ui/select";
+import { useNavigate } from "react-router-dom";
 
 export default function LiveTranscription() {
+  const [user, setUser] = useState(null);
+  const navigate = useNavigate();
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [transcription, setTranscription] = useState("");
@@ -26,43 +29,66 @@ export default function LiveTranscription() {
   const recognitionRef = useRef(null);
   const timerRef = useRef(null);
 
-  useEffect(() => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = true;
-      recognitionRef.current.lang = language === 'he' ? 'he-IL' : 'en-US';
-
-      recognitionRef.current.onresult = (event) => {
-        let interim = '';
-        let finalText = '';
-
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          if (event.results[i].isFinal) finalText += transcript + ' ';
-          else interim += transcript;
-        }
-
-        if (finalText) {
-          setTranscription(prev => prev + finalText);
-          setCurrentSentence('');
-        } else {
-          setCurrentSentence(interim);
-        }
-      };
-
-      recognitionRef.current.onerror = (event) => {
-        setError(`שגיאה בזיהוי קול: ${event.error}`);
-      };
-    } else {
-      setError("הדפדפן שלך לא תומך בזיהוי קול");
+  // 1. בדיקת משתמש
+useEffect(() => {
+  async function checkUser() {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/user/me`, {
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!data.user) {
+window.location.href = `${import.meta.env.VITE_API_BASE_URL}/api/auth/google`;
+      } else {
+        setUser(data.user);
+      }
+    } catch {
+      navigate("/login");
     }
+  }
 
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+  checkUser();
+}, []); // ← שים לב שאין פה תלות ב־language
+
+  useEffect(() => {
+  if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognitionRef.current = new SpeechRecognition();
+    recognitionRef.current.continuous = true;
+    recognitionRef.current.interimResults = true;
+    recognitionRef.current.lang = language === 'he' ? 'he-IL' : 'en-US';
+
+    recognitionRef.current.onresult = (event) => {
+      let interim = '';
+      let finalText = '';
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) finalText += transcript + ' ';
+        else interim += transcript;
+      }
+
+      if (finalText) {
+        setTranscription(prev => prev + finalText);
+        setCurrentSentence('');
+      } else {
+        setCurrentSentence(interim);
+      }
     };
-  }, [language]);
+
+    recognitionRef.current.onerror = (event) => {
+      setError(`שגיאה בזיהוי קול: ${event.error}`);
+    };
+  } else {
+    setError("הדפדפן שלך לא תומך בזיהוי קול");
+  }
+
+  return () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+  };
+}, [language]); // ← רץ כל פעם שהשפה משתנה
+
+
 
   const startRecording = async () => {
     try {
@@ -128,6 +154,18 @@ export default function LiveTranscription() {
     element.click();
     document.body.removeChild(element);
   };
+if (user === null) {
+  return (
+    <div className="flex items-center justify-center h-screen">
+      <div className="text-center space-y-4">
+        <h2 className="text-2xl font-semibold">יש להתחבר כדי להשתמש בתמלול חי</h2>
+        <a href={`${import.meta.env.VITE_API_BASE_URL}/api/auth/google`}>
+          <Button size="lg">התחבר עם Google</Button>
+        </a>
+      </div>
+    </div>
+  );
+}
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">

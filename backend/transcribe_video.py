@@ -90,7 +90,11 @@ class HebrewTranscriber:
     def transcribe_audio(self):
         logger.info("🧠 הרצת תמלול עם Whisper")
         try:
-            model = whisper.load_model(self.config.whisper_model)
+            model = whisper.load_model(
+                self.config.whisper_model,
+                device="cuda",
+                compute_type=getattr(self.config, "compute_type", "float16")
+            )
             # קובע האם לבצע תרגום או תמלול, לפי הקונפיג
             task_mode = "translate" if self.config.translation_target else "transcribe"
 

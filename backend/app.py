@@ -111,15 +111,32 @@ CORS(app, supports_credentials=True)
 
 @app.route('/api/proxy/results/<task_id>/<filename>')
 def proxy_result_file(task_id, filename):
-    bucket_name = os.getenv("R2_BUCKET_NAME")
-    object_key = f"{task_id}/{filename}"
-    print(f"📦 בקשת הורדה ל־: {object_key}")
-
     try:
-        obj = s3_client.get_object(Bucket=bucket_name, Key=object_key)
-        print(f"✅ נמצא ב־R2: {object_key}")
+        transcription = transcriptions_collection.find_one({"id": task_id})
+        if not transcription:
+            print("❌ לא נמצא תמלול עם task_id:", task_id)
+            return jsonify({"error": "לא נמצא תמלול תואם"}), 404
 
+        owner_email = transcription.get("user_email")
+        current_email = session.get("user", {}).get("email")
+        print(f"👤 המשתמש הנוכחי: {current_email}")
+        print(f"📄 בעל הקובץ: {owner_email}")
+
+        if owner_email not in (None, "", "guest"):
+            if owner_email != current_email:
+                print("⛔ גישה לא מורשית")
+                return jsonify({"error": "אין הרשאה לצפות בקובץ זה"}), 403
+
+        # DEBUG לפני קריאה ל־S3
+        bucket_name = os.getenv("R2_BUCKET_NAME")
+        object_key = f"{task_id}/{filename}"
+
+        print(f"📦 bucket_name = {bucket_name}")
+        print(f"📦 object_key = {object_key}")
+
+        obj = s3_client.get_object(Bucket=bucket_name, Key=object_key)
         data = obj['Body'].read()
+
         content_type = obj.get('ContentType') or "application/octet-stream"
         headers = {
             "Content-Type": content_type,
@@ -129,12 +146,13 @@ def proxy_result_file(task_id, filename):
         return Response(data, headers=headers)
 
     except s3_client.exceptions.NoSuchKey:
-        print(f"❌ לא נמצא מפתח: {object_key}")
+        print(f"❌ מפתח לא קיים: {object_key}")
         return jsonify({"error": "File not found"}), 404
 
     except Exception as e:
-        print(f"❌ שגיאה בהורדה מ־R2: {e}")
+        print(f"❌ שגיאה כללית בהורדה: {str(e)}")
         return jsonify({"error": str(e)}), 500
+
 
 
 
@@ -331,8 +349,7 @@ def build_config(input_path: str, output_base: str, language: str, translate_to:
 # --- נקודת API ---
 
 @app.route('/api/transcribe/upload', methods=['POST'])
-@limiter.limit("10 per minute")  # עד 10 העלאות לדקה לכל IP
-
+@limiter.limit("10 per minute")
 def api_upload():
     file, error = validate_upload_request()
     if not file:
@@ -340,7 +357,7 @@ def api_upload():
 
     language = request.form.get("language", "auto")
     translate_to = request.form.get("translate_to", "")
-    embed_subtitles = request.form.get("embed_subtitles", "true") == "true"  # שמור לשימוש עתידי
+    embed_subtitles = request.form.get("embed_subtitles", "true") == "true"
 
     sanitized_name = sanitize_filename(file.filename)
     input_path, output_base, task_id = generate_file_paths(sanitized_name)
@@ -359,9 +376,12 @@ def api_upload():
     config = build_config(input_path, output_base, language, translate_to)
     config_dict = config.__dict__
 
+    print("🚀 שולח משימה ל־Celery עם task_id =", task_id)
     transcribe_task.apply_async(args=[task_id, input_path, config_dict], task_id=task_id)
+    print("✅ apply_async נשלח בהצלחה")
 
     return jsonify({"task_id": task_id}), 200
+
 
 
 
@@ -409,6 +429,14 @@ def api_status(task_id: str):
                 "step": "pending",
                 "progress": 0
             })
+
+        elif result.state == "PROGRESS":
+            return jsonify({
+                "status": "processing",
+                "step": "working",
+                "progress": result.info.get("progress", 0)
+            })
+
 
         elif result.state == "SUCCESS":
             try:

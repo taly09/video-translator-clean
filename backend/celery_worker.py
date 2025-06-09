@@ -1,5 +1,7 @@
 # celery_worker.py
-
+import os  # ← תוודא שזה קיים למעלה
+os.environ["PATH"] += os.pathsep + r"C:\ffmpeg-2025-05-15-git-12b853530a-full_build\bin"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 from celery import Celery
 import logging
 from load_env import *

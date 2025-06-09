@@ -62,42 +62,54 @@ export default function UploadPage() {
 }, []);
 
 
-  useSSE(currentTaskId, async (data) => {
-  console.log("✅ SSE סיים בהצלחה:", data);
+  useSSE(
+  currentTaskId,
+  async (data) => {
+    console.log("📡 קיבלנו עדכון SSE:", data);
 
-  const taskId = currentTaskId; // ← נשמר לפני האיפוס
+    if (data.progress !== undefined) {
+      setProgress(data.progress);        // ✅ מעדכן את ההתקדמות
+      setStep(data.step || "processing"); // אפשר גם לעדכן שלב (לא חובה)
+    }
 
-  await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/transcriptions`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({
-      id: taskId,
-      title: "תמלול חדש",
-      content: data.transcript_text,
-      transcript_text: data.transcript_text,
-      srt_url: data.srt_url,
-      txt_url: data.txt_url,
-      pdf_url: data.pdf_url,
-      docx_url: data.docx_url,
-      video_with_subs_url: data.video_with_subs_url,
-      detected_language: data.detected_language,
-      duration: data.duration,
-      created_date: new Date().toISOString(),
-    }),
-  });
+    // האם הסתיים בהצלחה?
+    if (data.status === "completed" || data.transcript_text) {
+      const taskId = currentTaskId;
 
-  localStorage.removeItem("active_task_id");
-  setIsProcessing(false);
-  setCurrentTaskId(null);
-console.log("➡️ לפני ניווט לעמוד תמלול:", createPageUrl(`TranscriptionView?id=${taskId}`));
-navigate(createPageUrl(`TranscriptionView?id=${taskId}`));
-console.log("✅ ניווט בוצע");
-}, (error) => {
-  console.error("❌ SSE נכשל:", error);
-  setIsProcessing(false);
-  setError("אירעה שגיאה בעיבוד התמלול");
-});
+      await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/transcriptions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          id: taskId,
+          title: "תמלול חדש",
+          content: data.transcript_text,
+          transcript_text: data.transcript_text,
+          srt_url: data.srt_url,
+          txt_url: data.txt_url,
+          pdf_url: data.pdf_url,
+          docx_url: data.docx_url,
+          video_with_subs_url: data.video_with_subs_url,
+          detected_language: data.detected_language,
+          duration: data.duration,
+          created_date: new Date().toISOString(),
+        }),
+      });
+
+      localStorage.removeItem("active_task_id");
+      setIsProcessing(false);
+      setCurrentTaskId(null);
+
+      console.log("➡️ ניווט לעמוד תמלול:", createPageUrl(`TranscriptionView?id=${taskId}`));
+      navigate(createPageUrl(`TranscriptionView?id=${taskId}`));
+    }
+  },
+  (error) => {
+    console.error("❌ SSE נכשל:", error);
+    setIsProcessing(false);
+    setError("אירעה שגיאה בעיבוד התמלול");
+  }
+);
 
 
 

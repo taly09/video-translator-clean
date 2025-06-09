@@ -104,7 +104,7 @@ const filename = urlParts[urlParts.length - 1];
 // יוצר URL חדש שמצביע ל־proxy שלך ב־backend
 const srtUrl = `${import.meta.env.VITE_API_BASE_URL}/api/proxy/results/${data.id}/${filename}`;
 
-  const srtRes = await fetch(srtUrl);
+const srtRes = await fetch(srtUrl, { credentials: "include" });
   if (!srtRes.ok) throw new Error("לא ניתן לטעון קובץ כתוביות");
 
   const srt = await srtRes.text();
@@ -234,7 +234,7 @@ const downloadFile = async (type) => {
   try {
     const proxyUrl = `${import.meta.env.VITE_API_BASE_URL}/api/proxy/results/${transcription.id}/${filename}`;
 
-    const res = await fetch(proxyUrl);
+const res = await fetch(proxyUrl, { credentials: "include" });
     if (!res.ok) throw new Error("שגיאה בהורדת הקובץ");
 
     const blob = await res.blob();
@@ -339,10 +339,11 @@ const downloadFile = async (type) => {
           <Button variant="outline" size="sm" onClick={() => downloadFile("docx")}>📝 הורד Word</Button>
           {transcription?.video_with_subs_url && (
             <Button variant="default" size="sm" asChild>
-              <a href={`${import.meta.env.VITE_API_BASE_URL}${transcription.video_with_subs_url}`} target="_blank" rel="noopener noreferrer">
-                🎥 צפה בסרטון עם כתוביות
-              </a>
-            </Button>
+  <a href={transcription.video_with_subs_url} target="_blank" rel="noopener noreferrer">
+    🎥 צפה בסרטון עם כתוביות
+  </a>
+</Button>
+
           )}
           <Button variant="default" size="sm" onClick={toggleEdit}>
             {isEditing ? "ביטול" : <><Pencil className="w-4 h-4 ml-1" /> ערוך</>}

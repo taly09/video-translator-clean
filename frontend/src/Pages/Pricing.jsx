@@ -54,68 +54,82 @@ useEffect(() => {
   const [isYearly, setIsYearly] = useState(false);
 
   const plans = [
-    {
-      name: "חינם",
-      description: "מושלם להתחלה",
-      price: { monthly: 0, yearly: 0 },
-      features: [
-        "3 תמלולים בחודש",
-        "עד 30 דקות לתמלול",
-        "תמיכה בעברית ואנגלית",
-        "ייצוא TXT ו-SRT",
-        "איכות HD"
-      ],
-      limitations: [
-        "ללא AI Summary",
-        "ללא תמלול חי",
-        "ללא תמיכה מועדפת"
-      ],
-      popular: false,
-      cta: "התחל בחינם",
-      color: "gray"
-    },
-    {
-      name: "Pro",
-      description: "למשתמשים פעילים",
-      price: { monthly: 49, yearly: 39 },
-      features: [
-        "50 תמלולים בחודש",
-        "עד 4 שעות לתמלול",
-        "כל השפות (15+)",
-        "AI Summary חכם",
-        "תמלול חי",
-        "תמלול WhatsApp",
-        "כל פורמטי הייצוא",
-        "עדיפות בעיבוד",
-        "תמיכה במייל"
-      ],
-      limitations: [],
-      popular: true,
-      cta: "התחל תקופת ניסיון",
-      color: "blue"
-    },
-    {
-      name: "Premium",
-      description: "לעסקים וצוותים",
-      price: { monthly: 99, yearly: 79 },
-      features: [
-        "תמלולים ללא הגבלה",
-        "ללא הגבלת זמן",
-        "כל השפות + ניבים",
-        "AI Summary מתקדם",
-        "תמלול חי פרימיום",
-        "API גישה",
-        "ניהול צוות",
-        "אחסון ענן מוגדל",
-        "תמיכה טלפונית 24/7",
-        "SLA 99.9%"
-      ],
-      limitations: [],
-      popular: false,
-      cta: "צור קשר למכירות",
-      color: "purple"
-    }
-  ];
+  {
+    name: "חינם",
+    description: "תמלול בסיסי להתנסות ראשונית",
+    price: { monthly: 0, yearly: 0 },
+    features: [
+      "3 תמלולים בחודש",
+      "עד 30 דקות לתמלול",
+      "תמיכה בעברית ואנגלית",
+      "ייצוא לקובצי TXT ו-SRT",
+      "איכות תמלול HD"
+    ],
+    limitations: [
+      "ללא AI Summary",
+      "ללא תמלול חי",
+      "ללא תמיכה מועדפת"
+    ],
+    popular: false,
+    cta: "התחל ללא עלות",
+    color: "gray"
+  },
+  {
+    name: "Pro",
+    description: "ליצרני תוכן, מרצים ועסקים קטנים",
+    price: { monthly: 25, yearly: 21 }, // ₪25 ≈ $6.90
+    features: [
+      "100 תמלולים בחודש",
+      "עד שעתיים לתמלול",
+      "תמיכה ב-15 שפות",
+      "AI Summary חכם",
+      "תמלול WhatsApp",
+      "ייצוא לכל הפורמטים (PDF, DOCX, MP4)",
+      "עדיפות בעיבוד",
+      "תמיכה בדוא״ל"
+    ],
+    limitations: [],
+    popular: true,
+    cta: "התחל ניסיון בחינם",
+    color: "blue"
+  },
+  {
+    name: "Premium",
+    description: "לצוותים, חברות ויוצרים מתקדמים",
+    price: { monthly: 55, yearly: 45 }, // ₪55 ≈ $14.90
+    features: [
+      "תמלולים ללא הגבלה",
+      "ללא הגבלת משך לקובץ",
+      "תמיכה בכל השפות והניבים",
+      "AI Summary מתקדם",
+      "תמלול חי ברמה פרימיום",
+      "גישה ל־API",
+      "ניהול צוותים והרשאות",
+      "אחסון בענן מוגדל",
+      "תמיכה טלפונית 24/7",
+      "SLA מקצועי (99.9%)"
+    ],
+    limitations: [],
+    popular: false,
+    cta: "צור קשר עם צוות המכירות",
+    color: "purple"
+  },
+  {
+    name: "10 קרדיטים",
+    description: "לשימוש חד-פעמי ללא מנוי",
+    price: { monthly: 4.9, yearly: 4.9 },
+    features: [
+      "10 תמלולים חד־פעמיים",
+      "שימוש מיידי לפי צורך",
+      "אין צורך בהרשמה למנוי"
+    ],
+    limitations: [],
+    popular: false,
+    cta: "רכוש כעת",
+    color: "green"
+  }
+];
+
 
   const features = [
     {
