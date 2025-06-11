@@ -11,7 +11,8 @@ from docx import Document
 from fpdf import FPDF
 import cv2  # שים למעלה אם עדיין לא מיובא
 from r2_client import upload_file_to_r2
-
+from billing import is_allowed_to_transcribe, PlanType
+from mongo_client import get_user_usage_and_plan, update_user_usage
 
 from utils import translate_segments
 
@@ -23,6 +24,9 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+logging.getLogger("celery").setLevel(logging.ERROR)
+logging.getLogger("kombu").setLevel(logging.ERROR)
+
 
 def update_status(step, progress):
     with open("../status.json", "w", encoding="utf-8") as f:
@@ -53,6 +57,32 @@ class Config:
         except json.JSONDecodeError:
             logger.error("Invalid config file format")
             sys.exit(1)
+
+import subprocess
+
+FFPROBE_PATH = r"C:\ffmpeg-2025-05-15-git-12b853530a-full_build\bin\ffprobe.exe"
+
+def get_video_duration(path):
+    try:
+        result = subprocess.run(
+            [FFPROBE_PATH, "-v", "error", "-show_entries", "format=duration",
+             "-of", "default=noprint_wrappers=1:nokey=1", path],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        duration_str = result.stdout.strip()
+        if not duration_str:
+            print("⚠️ ffprobe לא החזיר משך")
+            return 1  # ← תמיד נחזיר לפחות 1 שנייה
+
+        duration = float(duration_str)
+        print(f"⏱️ משך וידאו מחושב: {duration} שניות")
+        return max(1, int(duration))  # ← תמיד מחזיר 1 ומעלה
+    except Exception as e:
+        print(f"⚠️ ffprobe נכשל: {e}")
+        return 1  # ← גם אם יש שגיאה, נחזיר 1
+
 
 class HebrewTranscriber:
     def __init__(self, config):
@@ -243,7 +273,18 @@ class HebrewTranscriber:
     def is_video_file(self, filepath):
         return os.path.splitext(filepath)[1].lower() in [".mp4", ".mov", ".avi", ".webm"]
 
-    def transcribe_and_process(self, filepath):
+    def transcribe_and_process(self, filepath, user_id=None):
+        print("🧠 DEBUG user_id =", user_id)
+
+        if user_id:
+            user_plan, current_usage = get_user_usage_and_plan(user_id)
+            if not is_allowed_to_transcribe(user_plan, current_usage):
+                return {
+                    "status": "denied",
+                    "message": "חרגת מהמכסה במסלול שלך",
+                    "allowed": False
+                }
+
         print("⚙️ נכנסנו ל־transcribe_and_process()")
         logger.info(f"▶️ התחלת תהליך תמלול עבור: {filepath}")
 
@@ -252,10 +293,8 @@ class HebrewTranscriber:
             print("🎧 extracting audio...")
             self.extract_audio()
 
-            # חישוב משך
             try:
-                self.duration = self.get_video_duration(filepath)
-                print("⏱️ video duration =", self.duration)
+                self.duration = get_video_duration(filepath)
             except Exception as e:
                 logger.warning(f"⚠️ שגיאה בחישוב משך וידאו: {e}")
                 self.duration = 0
@@ -268,7 +307,6 @@ class HebrewTranscriber:
             except Exception as e:
                 logger.error(f"❌ שגיאה בתמלול: {str(e)}")
                 import traceback
-                print(traceback.format_exc())
                 return {
                     "status": "failed",
                     "message": str(e),
@@ -286,7 +324,6 @@ class HebrewTranscriber:
 
             self.detected_lang = getattr(self, 'source_language', "unknown")
 
-            # יצירת שמות קבצים
             base_name = os.path.splitext(os.path.basename(self.config.output_video))[0]
             task_id = base_name.split("_")[-1]
             txt_path = os.path.join("results", f"{base_name}.txt")
@@ -295,7 +332,6 @@ class HebrewTranscriber:
             srt_path = self.config.output_srt
             video_path = self.config.output_video
 
-            # יצירת קבצים
             update_status("creating_documents", 50)
             print("🛠️ מייצר txt/docx/pdf...")
             self.generate_txt(segments, txt_path)
@@ -306,24 +342,20 @@ class HebrewTranscriber:
             print("🎬 מייצר SRT...")
             self.generate_srt(segments)
 
-            # העלאה ל־R2
             update_status("uploading", 95)
             print("🔼 מעלה קבצי תוצאה ל־R2...")
-            print("🧪 debug output_video =", self.config.output_video)
-            print("🧪 base_name =", base_name)
-            print("🧪 task_id =", task_id)
-            print("🧪 קבצים בתיקיית results:", os.listdir("results"))
 
             R2_PUBLIC_BASE = os.getenv("R2_PUBLIC_BASE") or \
                              "https://eb0e988de4e9fb026f45d9e3038314e2.r2.cloudflarestorage.com/talkscribe-uploads"
-            print("📂 תוכן תיקיית results:", os.listdir("results"))
 
             def try_upload(path, r2_key, label):
                 if os.path.exists(path):
                     success = upload_file_to_r2(path, r2_key)
+                    if not success:
+                        raise RuntimeError(f"{label} upload failed: {path}")
                     print(f"✅ {label} uploaded:", success)
                 else:
-                    print(f"❌ {label} לא קיים:", path)
+                    raise FileNotFoundError(f"{label} file not found: {path}")
 
             try_upload(txt_path, f"{task_id}/{base_name}.txt", "TXT")
             try_upload(docx_path, f"{task_id}/{base_name}.docx", "DOCX")
@@ -337,15 +369,24 @@ class HebrewTranscriber:
                     try_upload(video_path, f"{task_id}/{base_name}.mp4", "MP4")
                 except Exception as e:
                     logger.error(f"❌ שגיאה בצריבת כתוביות: {str(e)}")
-                    import traceback
-                    print(traceback.format_exc())
 
-            # ניקוי
             update_status("cleaning", 98)
             self.clean_temp_files()
 
             update_status("done", 100)
             logger.info(f"🎉 סיום: {len(segments)} סגמנטים, משך {self.duration} שניות")
+
+            # ✍️ עדכון שימוש למשתמש
+            print("🧠 DEBUG user_id =", user_id)
+
+            if user_id:
+                safe_duration = max(1, int(self.duration or 0))  # לפחות שנייה אחת
+                logger.info(f"🔄 מעדכן שימוש למשתמש: {user_id}, דקות: {safe_duration}")
+                print(f"📣 Calling update_user_usage... (duration={safe_duration})")
+                success = update_user_usage(user_id, safe_duration)
+                print("✅ update_user_usage success:", success)
+            else:
+                print(f"⚠️ לא עודכן שימוש — user_id={user_id}, duration={self.duration}")
 
             return {
                 "status": "completed",
@@ -366,22 +407,9 @@ class HebrewTranscriber:
         except Exception as e:
             logger.error(f"❌ שגיאה בתהליך כולו: {str(e)}")
             import traceback
-            print(traceback.format_exc())
             return {
                 "status": "failed",
                 "message": str(e),
                 "traceback": traceback.format_exc(),
                 "duration": getattr(self, 'duration', 0)
             }
-
-    def get_video_duration(self, path):
-        try:
-            cap = cv2.VideoCapture(path)
-            fps = cap.get(cv2.CAP_PROP_FPS)
-            frame_count = cap.get(cv2.CAP_PROP_FRAME_COUNT)
-            duration = int(frame_count / fps) if fps else 0
-            cap.release()
-            return duration
-        except Exception as e:
-            logger.warning(f"⚠️ שגיאה בחישוב זמן וידאו: {e}")
-            return 0

@@ -134,9 +134,11 @@ export default function UploadPage() {
 
     try {
       const res = await fetch(`${PYTHON_API_BASE_URL}/upload`, {
-        method: "POST",
-        body: formData,
-      });
+  method: "POST",
+  body: formData,
+  credentials: "include", // ⬅️ זה מה שחסר!
+});
+
 
       if (!res.ok) throw new Error("העלאה נכשלה");
 

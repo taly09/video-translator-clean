@@ -21,6 +21,9 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from load_env import *
 import boto3
+from billing import PLAN_LIMITS
+
+
 
 # --- Load .env ---
 import os
@@ -155,7 +158,28 @@ def proxy_result_file(task_id, filename):
 
 
 
+@app.route("/api/user/usage", methods=["GET"])
+@login_required
+def get_user_usage_route():
+    try:
+        user_email = session.get("user", {}).get("email")
+        if not user_email:
+            return jsonify({"error": "User not logged in"}), 401
 
+        from mongo_client import get_user_usage_and_plan
+        plan, usage = get_user_usage_and_plan(user_email)
+        limits = PLAN_LIMITS.get(plan, {})
+
+        return jsonify({
+            "status": "ok",
+            "plan": plan.value,
+            "usage": usage,
+            "limits": limits
+        })
+
+    except Exception as e:
+        print("❌ שגיאה ב־/api/user/usage:", str(e))
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/transcriptions/<task_id>/download/<filename>')
 def get_presigned_download(task_id, filename):
@@ -167,10 +191,11 @@ def get_presigned_download(task_id, filename):
         return jsonify({"error": "Could not generate download URL"}), 500
 
 @app.after_request
-def add_cors_headers(response):
+def add_all_response_headers(response):
+    # --- CORS ---
     origin = request.headers.get("Origin", "")
     frontend_url = os.getenv("FRONTEND_URL", "")
-    is_dev = "localhost" in origin or "127.0.0.1" in origin  # ⬅ זה מה שחשוב בפועל
+    is_dev = "localhost" in origin or "127.0.0.1" in origin
 
     if is_dev:
         if origin.startswith("http://localhost") or origin.startswith("http://127.0.0.1"):
@@ -184,16 +209,16 @@ def add_cors_headers(response):
         response.headers["Access-Control-Allow-Headers"] = "Content-Type"
         response.headers["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS"
 
-    return response
-
-
-@app.after_request
-def set_security_headers(response):
+    # --- Security Headers ---
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Referrer-Policy"] = "no-referrer"
     response.headers["Permissions-Policy"] = "camera=(), microphone=()"
-    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"  # ⚠️ רק בפרודקשן עם HTTPS
+
+    # ⚠️ רק אם אתה על HTTPS (כלומר ב־production אמיתי)
+    if request.is_secure or os.getenv("FLASK_ENV") == "production":
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+
     return response
 
 
@@ -225,6 +250,22 @@ def google_callback():
             "picture": user_info.get("picture"),
         }
         print("✅ נשמר ב־session:", session['user'])
+        from mongo_client import users_collection
+
+        users_collection.update_one(
+            {"_id": user_info["email"]},
+            {
+                "$setOnInsert": {
+                    "_id": user_info["email"],
+                    "email": user_info["email"],
+                    "plan": "FREE",
+                    "credits": 3,
+                    "minutes_this_month": 0,
+                    "transcripts_this_month": 0
+                }
+            },
+            upsert=True
+        )
 
         frontend = request.headers.get("Origin") or os.getenv("FRONTEND_URL", "http://localhost:5174")
         print("➡️ REDIRECTING TO FRONTEND:", frontend)
@@ -348,9 +389,32 @@ def build_config(input_path: str, output_base: str, language: str, translate_to:
 
 # --- נקודת API ---
 
+from mongo_client import get_user_usage_and_plan
+from billing import is_allowed_to_transcribe
+
+
 @app.route('/api/transcribe/upload', methods=['POST'])
 @limiter.limit("10 per minute")
 def api_upload():
+    print("🍪 cookies:", request.cookies)
+    print("🔐 session user =", session.get("user"))
+
+    user_id = session.get("user", {}).get("email")
+
+    if user_id:
+        try:
+            user_plan, usage = get_user_usage_and_plan(user_id)
+            print(f"🧠 plan: {user_plan}, usage: {usage}")
+            if not is_allowed_to_transcribe(user_plan, usage):
+                return jsonify({
+                    "error": "חרגת מהמכסה במסלול שלך. נא לשדרג כדי להמשיך.",
+                    "status": "denied"
+                }), 403
+        except Exception as e:
+            print("❌ שגיאה בבדיקת המסלול:", str(e))
+            return jsonify({"error": "שגיאה פנימית בבדיקת מסלול"}), 500
+
+    # 🧾 בדיקת קובץ
     file, error = validate_upload_request()
     if not file:
         return jsonify(error), 400
@@ -366,6 +430,7 @@ def api_upload():
     file.save(input_path)
     basename = os.path.basename(input_path)
     object_name = f"{task_id}/{basename}"
+
     success = upload_file_to_r2(input_path, object_name=object_name)
     if not success:
         print("❌ העלאה ל־R2 נכשלה")
@@ -375,13 +440,32 @@ def api_upload():
 
     config = build_config(input_path, output_base, language, translate_to)
     config_dict = config.__dict__
+    config_dict["user_id"] = user_id
+
+    # 💾 עדכון usage במסד הנתונים
+    if user_id:
+        try:
+            from mongo_client import users_collection
+            duration_minutes = get_audio_duration_wav(input_path) // 60
+            users_collection.update_one(
+                {"_id": user_id},
+                {
+                    "$inc": {
+                        "credits": -1,
+                        "transcripts_this_month": 1,
+                        "minutes_this_month": duration_minutes
+                    }
+                }
+            )
+            print(f"✅ עודכן שימוש למשתמש {user_id} | {duration_minutes} דקות, קרדיט ירד")
+        except Exception as e:
+            print(f"❌ שגיאה בעדכון usage של המשתמש: {str(e)}")
 
     print("🚀 שולח משימה ל־Celery עם task_id =", task_id)
     transcribe_task.apply_async(args=[task_id, input_path, config_dict], task_id=task_id)
     print("✅ apply_async נשלח בהצלחה")
 
     return jsonify({"task_id": task_id}), 200
-
 
 
 
