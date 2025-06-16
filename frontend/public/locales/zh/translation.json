@@ -1,0 +1,161 @@
+{
+  "hero": {
+    "badge": "最先进的技术",
+    "title1": "智能转录",
+    "title2": "基于人工智能",
+    "description": "最智能的希伯来语视频、音频和 WhatsApp 消息转录系统。98%+ 准确率，节省数小时工作时间。",
+    "startFree": "立即免费开始",
+    "liveTranscription": "实时转录",
+    "feature1": "无需注册",
+    "feature2": "首次转录免费",
+    "feature3": "即时结果"
+  },
+  "stats": {
+    "completed": "已完成的转录",
+    "accuracy": "平均准确率",
+    "languages": "支持的语言",
+    "availability": "可用性"
+  },
+  "status": {
+    "completed": "已完成",
+    "done": "已完成",
+    "processing": "处理中",
+    "failed": "失败",
+    "unknown": "未知"
+  },
+  "demos": {
+    "youtube": "YouTube 视频",
+    "zoom": "Zoom 会议",
+    "whatsapp": "WhatsApp 消息"
+  },
+  "common": {
+    "accuracy": "准确率"
+  },
+  "features": {
+    "title": "改变生活的优势",
+    "subtitle": "先进技术，母语级希伯来语理解能力",
+    "whatsapp": {
+      "title": "转录 WhatsApp 消息",
+      "desc": "上传 WhatsApp 聊天截图，即可获得完美的消息转录",
+      "badge": "新！"
+    },
+    "summary": {
+      "title": "智能 AI 摘要",
+      "desc": "自动总结转录内容，提取关键点和重要见解"
+    },
+    "multilang": {
+      "title": "支持 15 种语言",
+      "desc": "支持希伯来语、英语、阿拉伯语、俄语、法语、西班牙语等多种语言"
+    },
+    "speed": {
+      "title": "闪电速度",
+      "desc": "一小时视频仅需 2-3 分钟完成转录，准确率达 98%+"
+    },
+    "live": {
+      "title": "实时转录",
+      "desc": "适用于 Zoom、Teams 等实时通话的转录",
+      "badge": "专业版"
+    },
+    "export": {
+      "title": "导出为任意格式",
+      "desc": "支持 SRT、TXT、PDF、DOCX 等格式，包含内嵌字幕视频"
+    }
+  },
+  "usecases": {
+    "title": "适用于谁？",
+    "subtitle": "为不同用户定制的解决方案",
+    "creators": {
+      "title": "内容创作者",
+      "desc": "极速转录 YouTube 视频、播客和短视频",
+      "features": ["自动转录", "内嵌字幕", "导出 SRT"]
+    },
+    "business": {
+      "title": "商务人士",
+      "desc": "完美记录会议、客户对话及重要录音",
+      "features": ["Zoom/Teams 转录", "AI 摘要", "安全共享"]
+    },
+    "academia": {
+      "title": "研究人员和学者",
+      "desc": "科学准确地转录访谈、讲座和研究资料",
+      "features": ["98%+ 准确率", "术语支持", "学术导出"]
+    }
+  },
+  "testimonials": {
+    "title": "客户评价",
+    "subtitle": "每天有数千名满意用户使用本系统",
+    "t1": {
+      "name": "莎拉·科恩 博士",
+      "role": "希伯来大学研究员",
+      "content": "这个系统每周为我节省了几十个小时。准确率惊人，界面也很友好。"
+    },
+    "t2": {
+      "name": "利兰·雅科比",
+      "role": "数字内容创作者",
+      "content": "我的视频转录从未如此轻松。系统对希伯来语的识别完美无缺。"
+    },
+    "t3": {
+      "name": "米哈尔·巴拉克",
+      "role": "记者",
+      "content": "我用它转录访谈，节省大量时间，让我能专注写作。"
+    }
+  },
+  "cta": {
+    "title": "准备好节省数小时工作时间了吗？",
+    "subtitle": "立即开始首次免费转录。无需绑定，无需信用卡。",
+    "button1": "立即开始转录",
+    "button2": "试用 WhatsApp 转录"
+  },
+  "footer": {
+    "brand": "智能转录",
+    "desc": "最先进的希伯来语自动转录解决方案",
+    "features": "功能",
+    "video": "视频转录",
+    "whatsapp": "WhatsApp 转录",
+    "live": "实时转录",
+    "summary": "AI 摘要",
+    "support": "客户服务",
+    "help": "帮助中心",
+    "contact": "联系我们",
+    "guides": "使用指南",
+    "api": "API 文档",
+    "company": "公司",
+    "about": "关于我们",
+    "blog": "博客",
+    "career": "招聘",
+    "privacy": "隐私政策",
+    "copyright": "版权所有。"
+  },
+  "sidebar": {
+    "home": "首页",
+    "upload": "上传视频",
+    "whatsapp": "WhatsApp 转录",
+    "transcriptions": "我的转录",
+    "live": "实时转录",
+    "pricing": "定价",
+    "logout": "退出登录",
+    "login": "立即登录",
+    "new": "新！",
+    "pro": "专业版"
+  },
+  "upload": {
+    "title": "上传视频以进行转录",
+    "subtitle": "上传视频文件进行自动且准确的转录",
+    "startTranscription": "开始转录",
+    "embedSubtitles": "嵌入字幕",
+    "embedSubtitlesDesc": "生成带内嵌字幕的视频文件",
+    "translateTo": "翻译为",
+    "language": "语言",
+    "language_auto": "自动识别",
+    "language_hebrew": "希伯来语",
+    "language_english": "英语",
+    "language_arabic": "阿拉伯语",
+    "language_russian": "俄语",
+    "language_french": "法语",
+    "translate_none": "不翻译",
+    "selectLanguage": "选择语言",
+    "selectTranslate": "选择翻译语言",
+    "loginPromptTitle": "保存你的转录内容",
+    "loginPromptDesc": "登录系统即可随时访问并保存你的转录历史记录。",
+    "processing": "处理中..."
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "whisper_model": "medium",
+  "ffmpeg_path": "C:/ffmpeg-2025-05-15-git-12b853530a-full_build/bin/ffmpeg.exe",
+  "input_video": "video.mp4",
+  "output_audio": "temp_audio.wav",
+  "output_srt": "subtitles.srt",
+  "language": "auto",
+  "translation_target": null,
+  "compute_type": "float16",
+
+  "subtitle_style": {
+    "font": "Noto Sans",
+    "size": 36,
+    "alignment": "bottom_center",
+    "primary_color": "#FFFFFF",
+    "outline_color": "#000000",
+    "outline": 2,
+    "shadow": 0,
+    "margin_v": 60
+  },
+
+  "output_mode": "burn"
+}

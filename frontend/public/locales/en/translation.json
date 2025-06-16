@@ -1,0 +1,162 @@
+{
+  "hero": {
+    "badge": "The most advanced technology",
+    "title1": "Smart Transcription",
+    "title2": "Powered by AI",
+    "description": "The smartest system for transcribing video, audio, and WhatsApp messages in Hebrew. 98%+ accuracy and speed that saves you hours of work.",
+    "startFree": "Start Free Now",
+    "liveTranscription": "Live Real-Time Transcription",
+    "feature1": "No Registration",
+    "feature2": "First Transcription Free",
+    "feature3": "Instant Results"
+  },
+  "stats": {
+    "completed": "Transcriptions Completed",
+    "accuracy": "Average Accuracy",
+    "languages": "Languages Supported",
+    "availability": "Availability"
+  },
+"status": {
+  "completed": "Completed",
+  "done": "Completed",
+  "processing": "Processing",
+  "failed": "Failed",
+  "unknown": "Unknown"
+},
+  "demos": {
+    "youtube": "YouTube Video",
+    "zoom": "Zoom Call",
+    "whatsapp": "WhatsApp Messages"
+  },
+  "common": {
+    "accuracy": "Accuracy"
+  },
+  "features": {
+    "title": "Features That Will Change Your Life",
+    "subtitle": "Advanced technology that understands Hebrew like a native speaker",
+    "whatsapp": {
+      "title": "WhatsApp Message Transcription",
+      "desc": "Upload a screenshot of a WhatsApp chat and get a perfect transcription",
+      "badge": "New!"
+    },
+    "summary": {
+      "title": "Smart AI Summary",
+      "desc": "Get an automatic summary with key points and insights"
+    },
+    "multilang": {
+      "title": "Support for 15 Languages",
+      "desc": "Transcribe in Hebrew, English, Arabic, Russian, French, Spanish and more"
+    },
+    "speed": {
+      "title": "Lightning Speed",
+      "desc": "Transcribe a 1-hour video in just 2-3 minutes with 98%+ accuracy"
+    },
+    "live": {
+      "title": "Live Transcription",
+      "desc": "Real-time transcription for Zoom, Teams, or any live meeting",
+      "badge": "Pro"
+    },
+    "export": {
+      "title": "Export to Any Format",
+      "desc": "SRT, TXT, PDF, DOCX and more. Includes video with built-in subtitles"
+    }
+  },
+  "usecases": {
+    "title": "Who Is It For?",
+    "subtitle": "Tailored solutions for every user type",
+    "creators": {
+      "title": "Content Creators",
+      "desc": "Transcribe YouTube videos, podcasts, and shorts at lightning speed",
+      "features": ["Automatic Transcription", "Built-in Subtitles", "SRT Export"]
+    },
+    "business": {
+      "title": "Business Professionals",
+      "desc": "Transcribe meetings, client calls, and recordings with perfect documentation",
+      "features": ["Zoom/Teams Transcription", "AI Summary", "Secure Sharing"]
+    },
+    "academia": {
+      "title": "Researchers and Academics",
+      "desc": "Transcribe interviews, lectures, and research with scientific precision",
+      "features": ["98%+ Accuracy", "Terminology Support", "Research Export"]
+    }
+  },
+  "testimonials": {
+    "title": "What Our Customers Say",
+    "subtitle": "Thousands of happy users rely on our platform daily",
+    "1": {
+      "name": "Dr. Sarah Cohen",
+      "role": "Researcher at Hebrew University",
+      "content": "The system saved me dozens of hours a week. The accuracy is amazing and the interface is very intuitive."
+    },
+    "2": {
+      "name": "Liran Yaakobi",
+      "role": "Digital Content Creator",
+      "content": "Transcribing my videos has never been easier. The system understands Hebrew perfectly."
+    },
+    "3": {
+      "name": "Michal Barak",
+      "role": "Journalist",
+      "content": "I use it to transcribe interviews. It saves me so much time and lets me focus on writing."
+    }
+  },
+  "sidebar": {
+    "home": "Home",
+    "upload": "Upload Video",
+    "whatsapp": "WhatsApp Transcription",
+    "transcriptions": "My Transcriptions",
+    "live": "Live Transcription",
+    "pricing": "Pricing",
+    "logout": "Log Out",
+    "login": "Login Now",
+    "new": "New!",
+    "pro": "Pro"
+  },
+  "cta": {
+    "title": "Ready to save hours of work?",
+    "subtitle": "Start now with your first transcription free. No commitment, no credit card.",
+    "button1": "Start Transcribing Now",
+    "button2": "Try WhatsApp Transcription"
+  },
+
+  "footer": {
+    "brand": "Smart Transcription",
+    "desc": "The most advanced automatic Hebrew transcription solution",
+    "features": "Features",
+    "video": "Video Transcription",
+    "whatsapp": "WhatsApp Transcription",
+    "live": "Live Transcription",
+    "summary": "AI Summary",
+    "support": "Support",
+    "help": "Help Center",
+    "contact": "Contact Us",
+    "guides": "User Guides",
+    "api": "API Documentation",
+    "company": "Company",
+    "about": "About",
+    "blog": "Blog",
+    "career": "Careers",
+    "privacy": "Privacy",
+    "copyright": "All rights reserved."
+  },
+   "upload": {
+    "title": "Upload Video for Transcription",
+    "subtitle": "Upload a video file for automatic and accurate transcription",
+    "startTranscription": "Start Transcription",
+    "embedSubtitles": "Embed Subtitles",
+    "embedSubtitlesDesc": "Create a video file with embedded subtitles",
+    "translateTo": "Translate to",
+    "language": "Language",
+    "language_auto": "Auto Detect",
+    "language_hebrew": "Hebrew",
+    "language_english": "English",
+    "language_arabic": "Arabic",
+    "language_russian": "Russian",
+    "language_french": "French",
+    "translate_none": "No Translation",
+    "selectLanguage": "Select Language",
+    "selectTranslate": "Select Language to Translate",
+    "processing": "Processing...",
+    "loginPromptTitle": "To save your transcriptions",
+    "loginPromptDesc": "Log in to access your transcriptions anytime and keep your history."
+  }
+}

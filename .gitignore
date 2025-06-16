@@ -1,0 +1,32 @@
+# Node
+frontend/node_modules/
+frontend/.env
+frontend/.env.local
+
+# Python
+*.pyc
+__pycache__/
+backend/__pycache__/
+backend/.env
+backend/.env.local
+.env.local
+.env.prod
+
+# VSCode / PyCharm / system
+.idea/
+.DS_Store
+Thumbs.db
+
+# Python virtual environments
+.venv/
+venv/
+backend/venv/
+
+# Generated or uploaded files
+backend/uploads/
+backend/results/
+status.json
+structure.txt
+
+*.log
+logs/
