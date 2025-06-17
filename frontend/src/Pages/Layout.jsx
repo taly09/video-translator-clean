@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { createPageUrl } from "@/utils/createPageUrl";
+import { useUser } from "@/context/UserContext";
 import { User } from "@/entities/User";
 import { motion, AnimatePresence } from "framer-motion";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -18,25 +19,12 @@ import { Badge } from "@/components/ui/badge";
 function LayoutContent({ children }) {
   const { t, i18n } = useTranslation();
   const location = useLocation();
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { user, setUser, loading } = useUser();
+
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const direction = i18n.language === "he" ? "rtl" : "ltr";
 
-  // Load user data
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await User.me();
-        setUser(userData);
-      } catch (error) {
-        console.log("User not authenticated");
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadUser();
-  }, []);
+
 
   // Hide layout for landing page
   // if (location.pathname === createPageUrl("Landing") || location.pathname === "/") {

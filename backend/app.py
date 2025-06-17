@@ -37,6 +37,7 @@ import requests
 # app.py
 
 import requests
+print("🔐 SECRET_KEY =", os.getenv("SECRET_KEY"))
 
 def download_video_from_r2(task_id, url, save_dir="uploads"):
     os.makedirs(save_dir, exist_ok=True)
@@ -469,7 +470,8 @@ def google_callback():
         frontend = request.headers.get("Origin") or os.getenv("FRONTEND_URL", "http://localhost:5174")
         print("➡️ REDIRECTING TO FRONTEND:", frontend)
         print("🔁 FINAL REDIRECT TO:", frontend)
-        return redirect(frontend)
+        return redirect(f"{frontend}?logged_in=true")
+
 
     except Exception as e:
         print("❌ שגיאה ב־callback:", str(e))

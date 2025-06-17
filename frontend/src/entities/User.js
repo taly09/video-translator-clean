@@ -24,16 +24,16 @@ if (!res.ok) {
       credentials: "include",
     });
 
-    if (res.ok) {
-      console.log("✅ Logged out successfully");
-      window.location.href = "/";
-    } else {
+    if (!res.ok) {
       console.error("❌ Logout failed", res.status);
+    } else {
+      console.log("✅ Logged out successfully");
     }
   } catch (err) {
     console.error("❌ Logout error:", err);
   }
 }
+
 
 
 };

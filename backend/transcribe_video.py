@@ -490,7 +490,18 @@ class HebrewTranscriber:
                 try:
                     print("🎞️ צורב כתוביות לסרטון...")
                     ass_path = srt_path.replace(".srt", ".ass")
-                    style_cfg = self.config.subtitle_style if hasattr(self.config, "subtitle_style") else {}
+                    DEFAULT_SUBTITLE_STYLE = {
+                        "font": "Arial",
+                        "size": 36,
+                        "alignment": "bottom_center",
+                        "primary_color": "#FFFFFF",
+                        "outline_color": "#000000",
+                        "outline": 2,
+                        "shadow": 0,
+                        "margin_v": 60
+                    }
+
+                    style_cfg = getattr(self.config, "subtitle_style", None) or DEFAULT_SUBTITLE_STYLE
                     rtl = self.detected_lang in ["he", "ar", "fa"]
                     convert_srt_to_ass(srt_path, ass_path, style_config=style_cfg, rtl=rtl)
                     burn_ass_subtitles(filepath, ass_path, video_path)

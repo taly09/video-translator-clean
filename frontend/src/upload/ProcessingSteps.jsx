@@ -50,7 +50,12 @@ export function ProcessingSteps({ currentStep, progress }) {
             >
               <div className="flex-shrink-0">
                 {isCompleted ? (
-                  <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+  step.key === "completed" ? (
+    <CheckCircle className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+  ) : (
+    <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+  )
+
                 ) : isCurrent ? (
                   <Loader2 className="w-6 h-6 text-blue-600 dark:text-blue-400 animate-spin" />
                 ) : (
