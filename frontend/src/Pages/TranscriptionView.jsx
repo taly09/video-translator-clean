@@ -116,41 +116,41 @@ if (transcriptionData.content) {
   };
 
   const handleSave = async () => {
-    if (!transcription) return;
+  if (!transcription) return;
 
-    try {
-      setIsSaving(true);
-      // כאן תצטרך להוסיף API endpoint לעדכון תוכן התמלול
-      // לעת עתה נשמור רק במצב המקומי
-      try {
-  setIsSaving(true);
-  const res = await fetch(`/api/transcriptions/${transcription.task_id}/update`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: 'include',
-    body: JSON.stringify({ segments })
-  });
-  if (!res.ok) throw new Error("שגיאה בשמירה");
-  const result = await res.json();
-  console.log("✅ Update result:", result);
-  setSuccessMessage("נשמר והקבצים עודכנו!");
-  setShowSuccess(true);
-  setIsEditing(false);
-  setTimeout(() => setShowSuccess(false), 3000);
-} catch (err) {
-  console.error(err);
-  setError("שגיאה בשמירת התמלול");
-} finally {
-  setIsSaving(false);
-}
+  try {
+    setIsSaving(true);
+    const res = await fetch(`/api/transcriptions/${transcription.task_id}/update`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: 'include',
+      body: JSON.stringify({ segments })
+    });
+    if (!res.ok) throw new Error("שגיאה בשמירה");
 
-    } catch (error) {
-      console.error('Error saving transcription:', error);
-      setError("שגיאה בשמירת התמלול");
-    } finally {
-      setIsSaving(false);
-    }
-  };
+    const result = await res.json();
+    console.log("✅ Update result:", result);
+
+    setSuccessMessage("נשמר והקבצים עודכנו!");
+    setShowSuccess(true);
+    setIsEditing(false);
+
+    setSuccessMessage("נתונים נטענים מחדש...");
+setShowSuccess(true);
+
+
+    // ⬇️ טען מחדש את הנתונים מהשרת
+    await loadTranscription();
+
+    setTimeout(() => setShowSuccess(false), 3000);
+  } catch (err) {
+    console.error(err);
+    setError("שגיאה בשמירת התמלול");
+  } finally {
+    setIsSaving(false);
+  }
+};
+
 
   const handleCopy = () => {
     navigator.clipboard.writeText(transcription.content || "");
@@ -485,21 +485,27 @@ setIsEditing(false);
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        {transcription.content ? (
-                          <div className="prose prose-lg max-w-none">
-                            <div className="bg-gray-50 rounded-lg p-6 text-gray-800 leading-relaxed whitespace-pre-wrap">
-                              {transcription.content}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="text-center py-12">
-                            <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                            <p className="text-gray-500">אין תוכן זמין עדיין</p>
-                            {transcription.status === 'processing' && (
-                              <p className="text-blue-600 mt-2">התמלול עדיין מעובד...</p>
-                            )}
-                          </div>
-                        )}
+                        {segments.length > 0 ? (
+  <div className="space-y-2">
+    {segments.map((seg, idx) => (
+      <div key={idx} className="border p-2 rounded bg-gray-50">
+        <div className="text-xs text-gray-500 mb-1">
+          {seg.start || "00:00:00,000"} → {seg.end || "00:00:00,000"}
+        </div>
+        <div>{seg.text}</div>
+      </div>
+    ))}
+  </div>
+) : (
+  <div className="text-center py-12">
+    <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+    <p className="text-gray-500">אין תוכן זמין עדיין</p>
+    {transcription.status === 'processing' && (
+      <p className="text-blue-600 mt-2">התמלול עדיין מעובד...</p>
+    )}
+  </div>
+)}
+
                       </div>
                     )}
                   </CardContent>
