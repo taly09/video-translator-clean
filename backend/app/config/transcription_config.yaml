@@ -1,0 +1,10 @@
+whisper_model: medium
+beam_size: 5
+best_of: 5
+temperature: 0.0
+compression_ratio_threshold: 2.4
+device: cuda
+subtitle_style:
+  font: Arial
+  font_size: 24
+  color: white
