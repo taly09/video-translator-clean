@@ -100,6 +100,43 @@ def get_transcription_files(task_id):
         return error_response("Not found", code=404)
     return success_response({"r2_urls": t.get("r2_urls", {})})
 
+@router.route("/api/transcriptions/<task_id>/update", methods=["POST"])
+def update_transcription(task_id):
+    data = request.get_json()
+    segments = data.get("segments")
+    if not segments:
+        return error_response("Missing segments", code=400)
+
+    srt_path = f"results/{task_id}_edited.srt"
+    with open(srt_path, "w", encoding="utf-8") as f:
+        for idx, seg in enumerate(segments, 1):
+            start = seg.get("start", "00:00:00,000")
+            end = seg.get("end", "00:00:00,000")
+            text = seg.get("text", "")
+            f.write(f"{idx}\n{start} --> {end}\n{text}\n\n")
+
+    from app.utils.file_generation import generate_outputs_from_srt
+    txt_path, docx_path, pdf_path = generate_outputs_from_srt(srt_path, f"{task_id}_edited")
+
+    from app.services.file_service import upload_outputs_and_update_db
+    result = upload_outputs_and_update_db(task_id, {
+        "srt": srt_path,
+        "txt": txt_path,
+        "docx": docx_path,
+        "pdf": pdf_path
+    })
+
+    transcriptions_collection.update_one(
+        {"task_id": task_id},
+        {"$set": {
+            "content": "\n".join([seg["text"] for seg in segments]),
+            "r2_files": result["uploaded"]
+        }}
+    )
+
+    return success_response({"message": "Transcription updated", "r2_files": result["uploaded"]})
+
+
 # ⬇️ שריפת כתוביות לסרטון
 @router.route("/api/transcriptions/<task_id>/burn", methods=["POST"])
 def burn_subtitles(task_id):

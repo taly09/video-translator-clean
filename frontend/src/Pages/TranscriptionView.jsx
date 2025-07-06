@@ -35,10 +35,11 @@ export default function TranscriptionView() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [isEditing, setIsEditing] = useState(false);
-  const [editedContent, setEditedContent] = useState("");
+    const [segments, setSegments] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+
 
   const taskId = new URLSearchParams(location.search).get("id");
 
@@ -96,7 +97,16 @@ export default function TranscriptionView() {
       console.log("📌 Final transcription data:", transcriptionData);
 
       setTranscription(transcriptionData);
-      setEditedContent(transcriptionData.content);
+if (transcriptionData.content) {
+  const lines = transcriptionData.content.split('\n').filter(line => line.trim() !== '');
+  const segs = lines.map((line, idx) => ({
+  start: `00:00:${(idx * 2).toString().padStart(2, '0')},000`,
+  end: `00:00:${(idx * 2 + 2).toString().padStart(2, '0')},000`,
+  text: line
+}));
+
+  setSegments(segs);
+}
     } catch (error) {
       console.error('Error loading transcription:', error);
       setError(error.message || "שגיאה בטעינת התמלול");
@@ -112,11 +122,28 @@ export default function TranscriptionView() {
       setIsSaving(true);
       // כאן תצטרך להוסיף API endpoint לעדכון תוכן התמלול
       // לעת עתה נשמור רק במצב המקומי
-      setTranscription(prev => ({ ...prev, content: editedContent }));
-      setIsEditing(false);
-      setSuccessMessage("התמלול נשמר בהצלחה!");
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 3000);
+      try {
+  setIsSaving(true);
+  const res = await fetch(`/api/transcriptions/${transcription.task_id}/update`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: 'include',
+    body: JSON.stringify({ segments })
+  });
+  if (!res.ok) throw new Error("שגיאה בשמירה");
+  const result = await res.json();
+  console.log("✅ Update result:", result);
+  setSuccessMessage("נשמר והקבצים עודכנו!");
+  setShowSuccess(true);
+  setIsEditing(false);
+  setTimeout(() => setShowSuccess(false), 3000);
+} catch (err) {
+  console.error(err);
+  setError("שגיאה בשמירת התמלול");
+} finally {
+  setIsSaving(false);
+}
+
     } catch (error) {
       console.error('Error saving transcription:', error);
       setError("שגיאה בשמירת התמלול");
@@ -383,12 +410,49 @@ export default function TranscriptionView() {
                   <CardContent>
                     {isEditing ? (
                       <div className="space-y-4">
-                        <Textarea
-                          value={editedContent}
-                          onChange={(e) => setEditedContent(e.target.value)}
-                          className="min-h-[400px] text-lg leading-relaxed resize-none"
-                          placeholder="הזן את תוכן התמלול כאן..."
-                        />
+                        <div className="space-y-2">
+  {segments.map((seg, idx) => (
+    <div key={idx} className="border p-2 rounded bg-gray-50">
+      <div className="flex gap-2 mb-1">
+  <input
+    type="text"
+    value={seg.start}
+    onChange={(e) => {
+      const updated = [...segments];
+      updated[idx].start = e.target.value;
+      setSegments(updated);
+    }}
+    placeholder="00:00:00,000"
+    className="w-32 p-1 border rounded text-xs"
+  />
+  <span>→</span>
+  <input
+    type="text"
+    value={seg.end}
+    onChange={(e) => {
+      const updated = [...segments];
+      updated[idx].end = e.target.value;
+      setSegments(updated);
+    }}
+    placeholder="00:00:02,000"
+    className="w-32 p-1 border rounded text-xs"
+  />
+</div>
+<input
+  type="text"
+  value={seg.text}
+  onChange={(e) => {
+    const updated = [...segments];
+    updated[idx].text = e.target.value;
+    setSegments(updated);
+  }}
+  className="w-full p-1 border rounded"
+/>
+
+    </div>
+  ))}
+</div>
+
                         <div className="flex items-center gap-2">
                           <Button
                             onClick={handleSave}
@@ -402,7 +466,16 @@ export default function TranscriptionView() {
                             variant="outline"
                             onClick={() => {
                               setIsEditing(false);
-                              setEditedContent(transcription.content || "");
+if (transcription.content) {
+  const lines = transcription.content.split('\n').filter(line => line.trim() !== '');
+  const segs = lines.map((line, idx) => ({
+    start: `00:00:${(idx * 2).toString().padStart(2, '0')},000`,
+    end: `00:00:${(idx * 2 + 2).toString().padStart(2, '0')},000`,
+    text: line
+  }));
+  setSegments(segs);
+}
+setIsEditing(false);
                             }}
                           >
                             <X className="w-4 h-4 mr-1" />
