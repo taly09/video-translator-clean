@@ -24,7 +24,7 @@ i18n
   });
 
 // 🌍 זיהוי מדינה והגדרת שפה אוטומטית
-fetch("https://ipapi.co/json/")
+fetch("/ipapi/json/")
   .then((res) => res.json())
   .then((data) => {
     const country = data.country?.toLowerCase();
@@ -46,5 +46,6 @@ fetch("https://ipapi.co/json/")
   .catch(() => {
     i18n.changeLanguage("he");
   });
+
 
 export default i18n;

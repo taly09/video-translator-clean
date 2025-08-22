@@ -3,10 +3,43 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Smart Transcriber</title>
+    <title>Caply – Subtitle Editor</title>
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#7c3aed" />
+
+    <!-- Google Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;700;900&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;700;900&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- CSS ראשי -->
+    <link rel="stylesheet" href="/src/index.css" />
   </head>
-  <body>
+
+  <body class="font-sans">
     <div id="root"></div>
+
+    <!-- 1. נטען קודם את vite-client: מגדיר את ה-preamble ומריץ HMR -->
+    <script type="module" src="/@vite/client"></script>
+
+    <!-- 2. נטען את הקוד הראשי של React -->
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

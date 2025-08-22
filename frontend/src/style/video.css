@@ -1,0 +1,336 @@
+/* 1) ה-wrapper עם יחס 16:9 ו-overflow hidden */
+.video-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 100vw;
+  aspect-ratio: 16/9;
+  overflow: hidden;
+  background: black;
+  margin: 0 auto;
+
+  /* חוסם גלילה/זום בטאץ' */
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+
+  /* ברירת־מחדל לצבע הדגשה */
+  --hl: #3b82f6;
+}
+
+/* 2) disable-interaction רק לווידאו */
+.video-wrapper.disable-interaction video {
+  pointer-events: none;
+}
+
+/* 3) התאמת הווידאו בתוך ה-wrapper */
+.video-wrapper video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* פרופורציות נכונות */
+}
+
+/* ---------- בסיס מילים והדגשה כללית ---------- */
+.subtitle-word {
+  display: inline-block;
+  padding: 0 2px;
+  background-color: transparent;
+  color: inherit;
+  transform: scale(1);
+  transition:
+    background-color .3s ease-in-out,
+    transform        .3s ease-in-out,
+    opacity          .2s ease-in-out;
+  will-change: background-color, transform, opacity;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.subtitle-word.active {
+  background-color: var(--hl, #3b82f6);
+  color: #000;
+  transform: scale(1.05);
+}
+
+/* --- word-only (מילה נוכחית מודגשת בלבד, בלי רקע) --- */
+.subtitle-word.word-only-word {
+  background: transparent;
+  opacity: .7;
+  transition: transform .18s ease, color .18s ease, opacity .18s ease;
+}
+.subtitle-word.word-only-word.active {
+  background: transparent !important;
+  color: var(--hl, #3b82f6);
+  text-shadow: 0 0 10px rgba(255,255,255,.35);
+  transform: scale(1.06);
+  opacity: 1;
+}
+
+/* --- highlight --- */
+.subtitle-word.highlight-word.active {
+  background: var(--hl, #3b82f6);
+  color: #111;
+  border-radius: .2em;
+  transform: scale(1.06);
+}
+
+/* --- highlight-word-only --- */
+.subtitle-word.highlight-word-only-word { opacity: .25; }
+.subtitle-word.highlight-word-only-word.active {
+  opacity: 1;
+  color: var(--hl, #3b82f6);
+  font-weight: 800;
+  text-shadow: 0 0 8px var(--hl, #3b82f6);
+  background: transparent;
+}
+
+/* --- progressive-word-only --- */
+.subtitle-word.progressive-word-only-word { opacity: 0; transform: translateY(.35em); }
+.subtitle-word.progressive-word-only-word.active { opacity: 1; transform: translateY(0); }
+.subtitle-word.progressive-word-only-word.past {
+  opacity: 1;
+  transform: translateY(0);
+  color: inherit;
+}
+
+/* --- progressive --- */
+.subtitle-word.progressive-word { opacity: .4; transform: translateY(.35em); }
+.subtitle-word.progressive-word.active {
+  opacity: 1;
+  transform: translateY(0);
+  background: rgba(0,0,0,.2);
+  border-radius: .2em;
+}
+
+/* --- YouTube --- */
+.subtitle-word.youtube-word { background: transparent; }
+.subtitle-word.youtube-word.active {
+  background-color: var(--hl, #3b82f6);
+  color: #fff;
+  border-radius: .25em;
+  padding: 0 .25em;
+  transform: scale(1.05);
+}
+
+/* --- electric --- */
+@keyframes electricGlow {
+  0%,100% { text-shadow: 0 0 0 rgba(255,255,255,0); }
+  50%     { text-shadow: 0 0 10px rgba(255,255,255,.8); }
+}
+.subtitle-word.electric-word.active { animation: electricGlow .25s linear 2; }
+
+/* --- bounce --- */
+@keyframes bounceIn {
+  0%   { transform: translateY(.5em) scale(.95); }
+  60%  { transform: translateY(-.15em) scale(1.05); }
+  100% { transform: translateY(0) scale(1); }
+}
+.subtitle-word.bounce-word.active { animation: bounceIn .25s ease-out; }
+
+/* --- fire-reveal --- */
+@keyframes fireReveal {
+  0%   { filter: brightness(1.6) saturate(1.4); opacity:.2; }
+  100% { filter: none; opacity:1; }
+}
+.subtitle-word.fire-reveal-word.active {
+  animation: fireReveal .25s ease-out;
+  background: linear-gradient(90deg, var(--hl, #3b82f6), transparent);
+  border-radius: .2em;
+}
+
+/* --- sparkle --- */
+.subtitle-word.sparkle-word { background: transparent; }
+.subtitle-word.sparkle-word.active {
+  background: transparent !important;
+  color: inherit;
+  text-shadow: 0 0 6px var(--hl, #3b82f6), 0 0 14px var(--hl, #3b82f6), 0 0 24px rgba(255,255,255,.25);
+  animation: sparklePulse .8s ease-in-out infinite;
+  transform: scale(1.05);
+}
+@keyframes sparklePulse {
+  0%, 100% { text-shadow: 0 0 4px var(--hl, #3b82f6), 0 0 10px var(--hl, #3b82f6); }
+  50%      { text-shadow: 0 0 10px var(--hl, #3b82f6), 0 0 20px var(--hl, #3b82f6); }
+}
+
+/* --- drama --- */
+.subtitle-word.drama-word { opacity: .6; transform: scale(.98); }
+.subtitle-word.drama-word.active { opacity: 1; transform: scale(1.06); }
+
+/* --- explosion --- */
+@keyframes explodePop {
+  0%   { transform: scale(.6); opacity:.3; }
+  70%  { transform: scale(1.12); opacity:1; }
+  100% { transform: scale(1); }
+}
+.subtitle-word.explosion-word.active { animation: explodePop .22s cubic-bezier(.2,.7,.2,1); }
+
+/* --- paint --- */
+.subtitle-word.paint-word.active {
+  background: linear-gradient(90deg, var(--hl, #3b82f6), transparent);
+  color: #111;
+  border-radius: .25em;
+}
+
+/* --- wave --- */
+@keyframes wave { 0% { transform: translateY(.2em); } 50% { transform: translateY(-.2em); } 100% { transform: translateY(0); } }
+.subtitle-word.wave-word.active {
+  animation: wave .35s ease-in-out;
+  transform: translateY(-8px) scale(1.12);
+  color: var(--hl, #3b82f6);
+}
+
+/* --- karaoke --- */
+.subtitle-word.karaoke-word { background: rgba(0,0,0,.78); color: #fff; }
+.subtitle-word.karaoke-word.active {
+  background: var(--hl, #3b82f6);
+  color: #222;
+}
+.subtitle-word.karaoke-word.past { background: rgba(0,0,0,.38); }
+
+/* --- word-by-word --- */
+.subtitle-word.word-by-word-word { background: transparent; }
+.subtitle-word.word-by-word-word.active {
+  background: var(--hl, #3b82f6);
+  color: #181818;
+  transform: scale(1.06);
+}
+
+/* --- word-by-word-cumulative --- */
+.subtitle-word.word-by-word-cumulative-word { background: transparent; }
+.subtitle-word.word-by-word-cumulative-word.active {
+  background: var(--hl, #3b82f6);
+  color: #181818;
+  transform: scale(1.06);
+}
+
+/* דמו לכרטיסי Preview בגלריית Presets */
+.preset-demo {
+  white-space: nowrap;
+  text-align: center;
+}
+
+/* קריאות כללית – stroke עדין */
+.caption-readable {
+  text-shadow:
+    0 2px 0 rgba(0,0,0,.65),
+    0 0 6px rgba(0,0,0,.35);
+}
+
+/* רקע שקוף עדין אם רוצים פס */
+.caption-bg {
+  background: rgba(0,0,0,.35);
+  border-radius: .35em;
+  padding: .18em .4em;
+}
+
+/* תחושת נגיעה טובה במובייל */
+.subtitle-word { -webkit-tap-highlight-color: transparent; }
+
+/* רספונסיביות ל־Studio */
+@media (max-width: 1200px) {
+  .studio-grid { grid-template-columns: 1fr; }
+  .panel-left, .panel-right { display: none; }
+}
+
+
+/* ===== Neon Glow Pulse ===== */
+@keyframes neonPulse {
+  0%, 100% { text-shadow: 0 0 4px var(--hl, #0ff), 0 0 10px var(--hl, #0ff); }
+  50% { text-shadow: 0 0 10px var(--hl, #0ff), 0 0 20px var(--hl, #0ff); }
+}
+.subtitle-word.neon-word {
+  transition: color .2s ease, text-shadow .2s ease;
+  will-change: text-shadow;
+}
+.subtitle-word.neon-word.active {
+  color: var(--hl, #0ff);
+  animation: neonPulse 1s infinite;
+}
+
+/* ===== Matrix Rain Reveal ===== */
+@keyframes matrixDrop {
+  0%   { transform: translateY(-60%) scaleY(1.1); opacity: 0; filter: blur(1px); }
+  70%  { opacity: 1; filter: blur(0); }
+  85%  { transform: translateY(8%)  scaleY(.98); }
+  100% { transform: translateY(0)   scaleY(1); }
+}
+.subtitle-word.matrix-word {
+  display: inline-block;
+  transform: translateY(-60%);
+  opacity: 0;
+  will-change: transform, opacity;
+}
+.subtitle-word.matrix-word.active {
+  animation: matrixDrop 420ms cubic-bezier(.2, .8, .2, 1) forwards;
+}
+
+/* ===== Typewriter Fade (per word) ===== */
+@keyframes typeIn {
+  from { clip-path: inset(0 100% 0 0); opacity: .2; }
+  to   { clip-path: inset(0 0 0 0);   opacity: 1; }
+}
+@keyframes caretBlink {
+  0%, 100% { opacity: 0; }
+  50%      { opacity: 1; }
+}
+.subtitle-word.typewriter-word {
+  display: inline-block;
+  clip-path: inset(0 100% 0 0); /* מוסתר בהתחלה */
+  opacity: 0.2;
+  position: relative;
+  will-change: clip-path, opacity;
+}
+.subtitle-word.typewriter-word.active {
+  animation: typeIn 280ms steps(10, end) forwards;
+}
+.subtitle-word.typewriter-word.active::after {
+  content: '';
+  position: absolute;
+  right: -2px; top: 0; bottom: 0;
+  width: 1px;
+  background: currentColor;
+  animation: caretBlink 1s step-end infinite;
+}
+
+/* ===== PaperCut Parallax (Preview) ===== */
+.papercut-word { text-shadow: 0 1px 0 rgba(0,0,0,.25); }
+.papercut-word.active { transform: translateY(-1px); }
+.papercut-word.active::before {
+  content: attr(data-w);
+  position: absolute; inset: 0;
+  color: rgba(0,0,0,.55);
+  transform: translate(6px, 3px);
+  filter: blur(.6px);
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+.papercut-word.active::after {
+  content: '';
+  position: absolute; left: 0; right: 0; top: 35%; bottom: 15%;
+  background: var(--hl, #00C2A8);
+  border-radius: 6px;
+  opacity: .22;
+}
+
+/* ===== Barcode Print (Preview) ===== */
+.barcode-print-word {
+  color: transparent;
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--hl, #00C2A8) 0 4px,
+    transparent 4px 8px
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  background-size: 0% 100%;
+}
+.barcode-print-word.active {
+  background-size: 100% 100%;
+  transition: background-size .65s linear;
+}
+
+/* ===== Typewriter caret – תמיכה ב־RTL ===== */
+[dir="rtl"] .subtitle-word.typewriter-word.active::after {
+  left: -2px; right: auto;
+}

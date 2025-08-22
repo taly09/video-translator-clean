@@ -1,0 +1,24 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 640
+PlayResY: 360
+Collisions: Normal
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, BackColour, OutlineColour, Bold, Italic, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,Rubik,52,&H00FFFFFF,&H00000000,&H00000000,1,0,1,2,0,2,10,10,10,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.00,0:00:02.00,Default,,0,0,0,,{\fnRubik\fs25\c&H00FFBF00\b1\an9\pos(311,230)}אדוני  ראש  הממשלה
+Dialogue: 0,0:00:06.98,0:00:09.43,Default,,0,0,0,,{\fnRubik\fs25\c&H00FFFFFF\b1\an9\pos(320,306)}פעם  עמדתי  פה  ואמרתי
+Dialogue: 0,0:00:10.25,0:00:12.40,Default,,0,0,0,,{\fnRubik\fs25\c&H00FFFFFF\b1\an9\pos(320,306)}שאחרי  השיבה  באוקטובר
+Dialogue: 0,0:00:13.32,0:00:15.64,Default,,0,0,0,,{\fnRubik\fs25\c&H00FFFFFF\b1\an9\pos(320,306)}לא  תהיה  גם  מזרקה  על  שמך
+Dialogue: 0,0:00:15.64,0:00:17.92,Default,,0,0,0,,{\fnRubik\fs25\c&H00FFFFFF\b1\an9\pos(320,306)}אבל  יש  דבר  שכן  הזכרו
+Dialogue: 0,0:00:18.32,0:00:20.48,Default,,0,0,0,,{\fnRubik\fs25\c&H00FFFFFF\b1\an9\pos(320,306)}זה  שביום  השש  מאות
+Dialogue: 0,0:00:21.12,0:00:23.14,Default,,0,0,0,,{\fnRubik\fs25\c&H00FFFFFF\b1\an9\pos(320,306)}לזה  שהחטופים  שלנו  בבית
+Dialogue: 0,0:00:23.14,0:00:27.78,Default,,0,0,0,,{\fnRubik\fs25\c&H00FFFFFF\b1\an9\pos(320,306)}עלית  פה  וכל  מה  שהיה  לך  לעשות  זה  להתבדח  על  חשבון  המקום  הזה
+Dialogue: 0,0:00:27.78,0:00:29.67,Default,,0,0,0,,{\fnRubik\fs25\c&H00FFFFFF\b1\an9\pos(320,306)}הסיבה  לדיון  הזה
+Dialogue: 0,0:00:30.89,0:00:33.21,Default,,0,0,0,,{\fnRubik\fs25\c&H00FFFFFF\b1\an9\pos(320,306)}והחשיבות  של  המזדהות  של  כולנו
+Dialogue: 0,0:00:33.21,0:00:35.38,Default,,0,0,0,,{\fnRubik\fs25\c&H00FFFFFF\b1\an9\pos(320,306)}עם  האנשים  שנמצאים  קצת  כאן  למעלה
+Dialogue: 0,0:00:35.38,0:00:38.11,Default,,0,0,0,,{\fnRubik\fs25\c&H00FFFFFF\b1\an9\pos(320,306)}הם  הרבה  פחות  משועשעים  ממך

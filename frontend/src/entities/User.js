@@ -1,60 +1,58 @@
-const API_BASE_URL = ""; // כי אנחנו משתמשים ב-proxy של Vite
+// /src/entities/User.js
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // למשל: http://localhost:8765
 
 export const User = {
-  /**
-   * מביא את המשתמש הנוכחי מה-session
-   * מחזיר null אם לא מחובר
-   */
+  // קריאה למשתמש הנוכחי
   async me() {
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/user/me`, {
-      credentials: "include", // חשוב כדי לשלוח את ה-cookie של ה-session
-    });
-
-    console.log("👤 user res:", res);
-
-    if (!res.ok) {
-      console.warn("⚠️ לא מחובר או שגיאה בקבלת המשתמש");
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/user/me`, {
+        credentials: "include",
+      });
+      if (!res.ok) return null; // 401 לפני התחברות זה תקין
+      const data = await res.json();
+      return data?.data?.user || null;
+    } catch (err) {
+      console.error("❌ שגיאה בקבלת המשתמש:", err);
       return null;
     }
-
-    const data = await res.json();
-    console.log("👤 user data:", data);  // ⬅ כאן להוסיף את ה-console.log
-    return data.data?.user || null;      // ⬅ וגם את התיקון למבנה הנכון
-  } catch (err) {
-    console.error("❌ שגיאה בקבלת המשתמש:", err);
-    return null;
-  }
-}
-,
-
-  /**
-   * מפנה את המשתמש להתחברות עם Google
-   */
-  async login() {
-    // שולח את המשתמש ל־/login/google ב-backend
-    window.location.href = `/login/google`;
   },
 
-  /**
-   * מנתק את המשתמש מה-session ומחזיר לדף הבית
-   */
+  // לוגין עם Google – ניווט לשרת (לא לפרונטאנד)
+  login() {
+    const frontend = window.location.origin;
+    const next = frontend + window.location.pathname + window.location.search;
+    window.location.assign(
+      `${API_BASE_URL}/login/google?frontend=${encodeURIComponent(frontend)}&next=${encodeURIComponent(next)}`
+    );
+  },
+
+  // לוגין דמה (DEV בלבד)
+  async loginDev() {
+    const res = await fetch(`${API_BASE_URL}/api/login/dev`, {
+      method: "POST",
+      credentials: "include",
+    });
+    if (!res.ok) {
+      alert("Dev login failed");
+      return;
+    }
+    window.location.reload();
+  },
+
+  // התנתקות
   async logout() {
     try {
       const res = await fetch(`${API_BASE_URL}/api/logout`, {
         method: "POST",
         credentials: "include",
       });
-
       if (res.ok) {
-        console.log("✅ Logged out successfully");
-        // החזר לדף הבית או כל דף אחר
-        window.location.href = "/";
+        window.location.href = "/"; // או /login
       } else {
         console.error("❌ Logout failed", res.status);
       }
     } catch (err) {
       console.error("❌ Logout error:", err);
     }
-  }
+  },
 };

@@ -23,6 +23,15 @@ function LayoutContent({ children }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const direction = i18n.language === "he" ? "rtl" : "ltr";
 
+  // ⬇️ הוספה: זיהוי עמוד סטודיו + החלטה אם להציג סיידבר
+  const isStudio = /\/studio\b/i.test(location.pathname);
+  const showSidebar = (!isStudio && (typeof window !== "undefined" && window.innerWidth >= 1024))
+  || (!isStudio && isMenuOpen)
+  || (isStudio && isMenuOpen); // בסטודיו – רק כשפותחים תפריט
+
+
+
+
   // Load user data
   useEffect(() => {
     const loadUser = async () => {
@@ -48,9 +57,20 @@ function LayoutContent({ children }) {
     window.location.href = createPageUrl("Landing");
   };
   
-  const handleLogin = async () => {
-    await User.login();
-  };
+  const API_BASE = import.meta.env.VITE_API_BASE_URL; // בדיוק השם הזה
+
+const handleLogin = () => {
+  const origin = window.location.origin;
+  const next = origin + window.location.pathname + window.location.search;
+
+  window.location.assign(
+    `${API_BASE}/login/google?frontend=${encodeURIComponent(origin)}&next=${encodeURIComponent(next)}`
+  );
+};
+
+
+
+
 
   const navItems = [
     {
@@ -94,9 +114,10 @@ function LayoutContent({ children }) {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
-        * {
-          font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        }
+        body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
 
         .glass-effect {
           backdrop-filter: blur(20px);
@@ -168,14 +189,14 @@ function LayoutContent({ children }) {
 
       {/* Sidebar */}
       <AnimatePresence>
-{(isMenuOpen || typeof window !== 'undefined' && window.innerWidth >= 1024) && (
-  <motion.aside
-    initial={{ x: direction === "rtl" ? 300 : -300, opacity: 0 }}
-    animate={{ x: 0, opacity: 1 }}
-    exit={{ x: direction === "rtl" ? 300 : -300, opacity: 0 }}
-    transition={{ duration: 0.3, ease: "easeInOut" }}
-    className="fixed lg:relative inset-y-0 left-0 lg:left-auto z-40 w-80 glass-effect luxury-shadow"
-  >
+{showSidebar && (
+    <motion.aside
+      initial={{ x: direction === "rtl" ? 300 : -300, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      exit={{ x: direction === "rtl" ? 300 : -300, opacity: 0 }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
+      className="fixed lg:relative inset-y-0 left-0 lg:left-auto z-40 w-80 glass-effect luxury-shadow"
+    >
 
             <div className="flex flex-col h-full p-6">
               {/* Logo */}

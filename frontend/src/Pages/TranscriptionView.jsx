@@ -1,633 +1,446 @@
-import React, { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Stage, Layer, Text, Rect, Group } from 'react-konva';
 import { createPageUrl } from "@/utils/createPageUrl";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Skeleton } from "@/components/ui/skeleton";
-import { motion, AnimatePresence } from "framer-motion";
+import { Transcription } from '@/entities/Transcription';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Slider } from '@/components/ui/slider';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
-  ArrowRight,
-  FileText,
-  Download,
-  Copy,
-  Edit,
-  Save,
-  X,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  Video,
-  Languages,
-  Calendar,
   Play,
-  User,
-  Timer
-} from "lucide-react";
-import { format } from "date-fns";
+  Pause,
+  Save,
+  Download,
+  Share2,
+  Settings,
+  Palette,
+  Type,
+  Move,
+  RotateCcw,
+  Zap,
+  Sparkles,
+  Layers,
+  Eye,
+  EyeOff,
+  ArrowRight
+} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+
+import KonvaCanvas from '../components/studio/KonvaCanvas';
+import VideoPlayerAdvanced from '../components/studio/VideoPlayerAdvanced';
+import TimelineEditor from '../components/studio/TimelineEditor';
+import AdvancedFontSelector from '../components/studio/AdvancedFontSelector';
+import EffectsPanel from '../components/studio/EffectsPanel';
 
 export default function TranscriptionView() {
-  const location = useLocation();
-  const navigate = useNavigate();
   const [transcription, setTranscription] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [isEditing, setIsEditing] = useState(false);
-    const [segments, setSegments] = useState([]);
-  const [isSaving, setIsSaving] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [selectedSegment, setSelectedSegment] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [showEffects, setShowEffects] = useState(false);
+  const [canvasSize, setCanvasSize] = useState({ width: 1920, height: 1080 });
+  const [zoom, setZoom] = useState(1);
+  const [saving, setSaving] = useState(false);
+  const navigate = useNavigate();
 
-
-  const taskId = new URLSearchParams(location.search).get("id");
+  // Get transcription ID from URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const transcriptionId = urlParams.get('id');
 
   useEffect(() => {
-    if (taskId) {
+    if (transcriptionId) {
       loadTranscription();
-    } else {
-      setError("לא סופק מזהה תמלול");
-      setIsLoading(false);
     }
-  }, [taskId]);
+  }, [transcriptionId]);
 
   const loadTranscription = async () => {
     try {
-      setIsLoading(true);
-      setError("");
+        setLoading(true);
+        const data = await Transcription.get(transcriptionId);
 
-      console.log("📌 Loading transcription for task_id:", taskId);
-
-      // קבלת נתוני התמלול מהבקאנד
-      const response = await fetch(`/api/transcriptions/${taskId}`, {
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        throw new Error(`שגיאה בקבלת התמלול: ${response.status}`);
-      }
-
-      const result = await response.json();
-      console.log("📌 API Response:", result);
-
-      if (result.status !== 'success' || !result.data) {
-        throw new Error("תגובה לא תקינה מהשרת");
-      }
-
-      const data = result.data;
-
-      // הכנת אובייקט התמלול המלא
-      const transcriptionData = {
-        id: data._id,
-        task_id: data.task_id,
-        title: data.title || data.file_name || 'תמלול ללא שם',
-        file_name: data.file_name,
-        status: data.status,
-        language: data.language,
-        duration: data.duration,
-        content: data.content || (data.result && data.result.content) || "",
-        r2_urls: data.r2_urls || {},
-        r2_files: data.r2_files || {},
-        created_at: data.created_at,
-        completed_at: data.completed_at,
-        user_id: data.user_id
-      };
-
-      console.log("📌 Final transcription data:", transcriptionData);
-
-      setTranscription(transcriptionData);
-if (transcriptionData.content) {
-  const lines = transcriptionData.content.split('\n').filter(line => line.trim() !== '');
-  const segs = lines.map((line, idx) => ({
-  start: `00:00:${(idx * 2).toString().padStart(2, '0')},000`,
-  end: `00:00:${(idx * 2 + 2).toString().padStart(2, '0')},000`,
-  text: line
-}));
-
-  setSegments(segs);
-}
+        setTranscription(data);
+        // Initialize with sample data if empty
+        if (!data.segments || data.segments.length === 0) {
+          const sampleSegments = [
+            {
+              id: 1,
+              start: 0,
+              end: 3,
+              text: 'שלום וברוכים הבאים לסטודיו התמלול המתקדם',
+              style: {
+                fontFamily: 'Rubik',
+                fontSize: 48,
+                color: '#FFFFFF',
+                backgroundColor: '#000000CC',
+                stroke: '#000000',
+                strokeWidth: 2,
+                shadowColor: '#000000',
+                shadowBlur: 10,
+                shadowOffset: { x: 2, y: 2 },
+                position: { x: 960, y: 900 },
+                rotation: 0,
+                scaleX: 1,
+                scaleY: 1,
+                opacity: 1,
+                textAlign: 'center',
+                width: 800,
+                height: 100,
+                padding: 20,
+                cornerRadius: 10
+              }
+            },
+            {
+              id: 2,
+              start: 3.5,
+              end: 7,
+              text: 'עכשיו תוכלו לערוך כתוביות בצורה ויזואלית מלאה',
+              style: {
+                fontFamily: 'Assistant',
+                fontSize: 44,
+                color: '#FFD700',
+                backgroundColor: '#1A1A1ACC',
+                stroke: '#000000',
+                strokeWidth: 1,
+                shadowColor: '#FFD700',
+                shadowBlur: 15,
+                shadowOffset: { x: 0, y: 0 },
+                position: { x: 960, y: 850 },
+                rotation: 0,
+                scaleX: 1,
+                scaleY: 1,
+                opacity: 1,
+                textAlign: 'center',
+                width: 900,
+                height: 120,
+                padding: 25,
+                cornerRadius: 15
+              }
+            },
+            {
+              id: 3,
+              start: 7.5,
+              end: 11,
+              text: 'גררו, סובבו, שנו צבעים ותוכלו ליצור כתוביות מדהימות',
+              style: {
+                fontFamily: 'Heebo',
+                fontSize: 40,
+                color: '#FF6B6B',
+                backgroundColor: '#FFFFFF22',
+                stroke: '#FFFFFF',
+                strokeWidth: 3,
+                shadowColor: '#FF6B6B',
+                shadowBlur: 20,
+                shadowOffset: { x: 3, y: 3 },
+                position: { x: 960, y: 800 },
+                rotation: -2,
+                scaleX: 1.1,
+                scaleY: 1.1,
+                opacity: 0.95,
+                textAlign: 'center',
+                width: 950,
+                height: 140,
+                padding: 30,
+                cornerRadius: 20
+              }
+            }
+          ];
+          setTranscription(prev => ({ ...prev, segments: sampleSegments }));
+        }
     } catch (error) {
       console.error('Error loading transcription:', error);
-      setError(error.message || "שגיאה בטעינת התמלול");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
+
+  const handleSegmentUpdate = (segmentId, updates) => {
+    setTranscription(prev => ({
+      ...prev,
+      segments: prev.segments.map(segment =>
+        segment.id === segmentId
+          ? { ...segment, ...updates }
+          : segment
+      )
+    }));
+  };
+
+    const handleSegmentStyleUpdate = (segmentId, styleUpdates) => {
+        setTranscription(prev => ({
+            ...prev,
+            segments: prev.segments.map(segment =>
+                segment.id === segmentId
+                ? { ...segment, style: { ...segment.style, ...styleUpdates } }
+                : segment
+            )
+        }));
+    };
 
   const handleSave = async () => {
-  if (!transcription) return;
+    if (!transcription) return;
 
-  try {
-    setIsSaving(true);
-    const res = await fetch(`/api/transcriptions/${transcription.task_id}/update`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: 'include',
-      body: JSON.stringify({ segments })
-    });
-    if (!res.ok) throw new Error("שגיאה בשמירה");
-
-    const result = await res.json();
-    console.log("✅ Update result:", result);
-
-    setSuccessMessage("נשמר והקבצים עודכנו!");
-    setShowSuccess(true);
-    setIsEditing(false);
-
-    setSuccessMessage("נתונים נטענים מחדש...");
-setShowSuccess(true);
-
-
-    // ⬇️ טען מחדש את הנתונים מהשרת
-    await loadTranscription();
-
-    setTimeout(() => setShowSuccess(false), 3000);
-  } catch (err) {
-    console.error(err);
-    setError("שגיאה בשמירת התמלול");
-  } finally {
-    setIsSaving(false);
-  }
-};
-
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(transcription.content || "");
-    setSuccessMessage("הטקסט הועתק!");
-    setShowSuccess(true);
-    setTimeout(() => setShowSuccess(false), 2000);
-  };
-
-  const downloadFile = async (fileType) => {
-    if (!transcription || !transcription.task_id) {
-      setError("מזהה תמלול לא זמין להורדה.");
-      return;
-    }
-
+    setSaving(true);
     try {
-      console.log(`📥 Downloading ${fileType} for task ${transcription.task_id}`);
-
-      // שימוש בפרוקסי של הבקאנד להורדת הקובץ
-      const url = `/api/proxy/results/${transcription.task_id}/${fileType}`;
-      console.log("📥 Download URL:", url);
-
-      // פתיחת הקישור בחלון חדש להורדה
-      window.open(url, '_blank');
-
-      setSuccessMessage(`הורדת ${fileType} החלה!`);
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 2000);
-
-    } catch (err) {
-      console.error("Error downloading file:", err);
-      setError(`שגיאה בהורדת הקובץ: ${err.message}`);
+      await Transcription.update(transcription.id, {
+        segments: transcription.segments,
+        settings: transcription.settings
+      });
+    } catch (error) {
+      console.error('Error saving:', error);
+    } finally {
+      setSaving(false);
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800 border-green-200';
-      case 'processing': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'failed': return 'bg-red-100 text-red-800 border-red-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
+  const getCurrentSegment = () => {
+    if (!transcription?.segments) return null;
+    return transcription.segments.find(segment =>
+      currentTime >= segment.start && currentTime <= segment.end
+    );
   };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'completed': return <CheckCircle className="w-4 h-4" />;
-      case 'processing': return <Clock className="w-4 h-4" />;
-      case 'failed': return <AlertCircle className="w-4 h-4" />;
-      default: return <Clock className="w-4 h-4" />;
-    }
+  const handleExport = () => {
+    // TODO: Implement advanced export options
+    console.log('Export with effects:', transcription);
   };
 
-  const getStatusText = (status) => {
-    switch (status) {
-      case 'completed': return 'הושלם';
-      case 'processing': return 'מעובד';
-      case 'pending': return 'בהמתנה';
-      case 'failed': return 'נכשל';
-      default: return 'לא ידוע';
-    }
-  };
-
-  const formatDuration = (seconds) => {
-    if (!seconds) return '0:00';
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = Math.floor(seconds % 60);
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'לא ידוע';
-    try {
-      return format(new Date(dateString), 'dd/MM/yyyy HH:mm');
-    } catch {
-      return 'תאריך לא תקין';
-    }
-  };
-
-  if (isLoading) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6 lg:p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="space-y-6">
-            <div className="flex items-center gap-4">
-              <Skeleton className="w-8 h-8" />
-              <Skeleton className="h-8 w-32" />
-            </div>
-            <div className="grid lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2">
-                <Skeleton className="h-96 w-full" />
-              </div>
-              <div>
-                <Skeleton className="h-64 w-full" />
-              </div>
-            </div>
-          </div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-black">
+        <div className="text-center">
+          <div className="w-20 h-20 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+          <p className="text-white text-lg">טוען סטודיו...</p>
         </div>
       </div>
     );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6 lg:p-8">
-        <div className="max-w-4xl mx-auto">
-          <Alert variant="destructive" className="mb-6">
-            <AlertCircle className="w-4 h-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-          <Button onClick={() => navigate(createPageUrl("Dashboard"))}>
-            <ArrowRight className="w-4 h-4 mr-2" />
-            חזור לדשבורד
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!transcription) return null;
-
-  // קבלת הקבצים הזמינים להורדה
-  const availableFiles = [];
-  if (transcription.r2_files) {
-    Object.keys(transcription.r2_files).forEach(fileType => {
-      if (transcription.r2_files[fileType] &&
-          !transcription.r2_files[fileType].toString().includes("Local file not found")) {
-        availableFiles.push(fileType);
-      }
-    });
-  }
-  if (transcription.r2_urls) {
-    Object.keys(transcription.r2_urls).forEach(fileType => {
-      if (transcription.r2_urls[fileType] && !availableFiles.includes(fileType)) {
-        availableFiles.push(fileType);
-      }
-    });
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="p-6 lg:p-8">
-        <div className="max-w-7xl mx-auto">
-          <AnimatePresence>
-            {showSuccess && (
-              <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="mb-6"
-              >
-                <Alert className="bg-green-50 border-green-200 text-green-800">
-                  <CheckCircle className="w-4 h-4" />
-                  <AlertDescription>
-                    {successMessage}
-                  </AlertDescription>
-                </Alert>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
-          >
-            <Button
-              variant="ghost"
-              onClick={() => navigate(createPageUrl("Dashboard"))}
-              className="mb-4 hover:bg-white/50"
-            >
-              <ArrowRight className="w-4 h-4 mr-2" />
-              חזור לדשבורד
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white" dir="rtl">
+      {/* Header */}
+      <div className="bg-black/50 backdrop-blur-xl border-b border-white/10 p-4">
+        <div className="max-w-full mx-auto flex items-center justify-between px-6">
+            <Button variant="ghost" className="text-white" onClick={() => navigate(createPageUrl('Dashboard'))}>
+                <ArrowRight className="w-4 h-4 ml-2" />
+                חזרה לדשבורד
             </Button>
+          <div className="flex items-center gap-4">
+            <motion.div
+              className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Sparkles className="w-6 h-6 text-white" />
+            </motion.div>
+            <div>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                {transcription?.title || 'סטודיו תמלול'}
+              </h1>
+              <p className="text-gray-400 text-sm">עריכה ויזואלית מתקדמת</p>
+            </div>
+          </div>
 
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/20">
-              <div className="flex items-start gap-6">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
-                  <FileText className="w-8 h-8 text-white" />
-                </div>
-                <div className="flex-1">
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                    {transcription.title}
-                  </h1>
-                  <div className="flex items-center gap-4 mb-3">
-                    <Badge className={`flex items-center gap-1 ${getStatusColor(transcription.status)}`}>
-                      {getStatusIcon(transcription.status)}
-                      {getStatusText(transcription.status)}
-                    </Badge>
-                    {transcription.language && (
-                      <Badge variant="outline" className="flex items-center gap-1">
-                        <Languages className="w-3 h-3" />
-                        {transcription.language}
-                      </Badge>
-                    )}
-                    {transcription.duration && (
-                      <Badge variant="outline" className="flex items-center gap-1">
-                        <Timer className="w-3 h-3" />
-                        {formatDuration(transcription.duration)}
-                      </Badge>
-                    )}
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowEffects(!showEffects)}
+              className="border-white/20 text-white hover:bg-white/10"
+            >
+              <Zap className="w-4 h-4 mr-2" />
+              אפקטים
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExport}
+              className="border-white/20 text-white hover:bg-white/10"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              ייצא
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={saving}
+              className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+            >
+              {saving ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  שומר...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  שמור
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex h-[calc(100vh-80px)]">
+        {/* Left Panel - Tools */}
+        <motion.div
+          initial={{ x: -300 }}
+          animate={{ x: 0 }}
+          className="w-80 bg-black/30 backdrop-blur-xl border-r border-white/10 p-4 overflow-y-auto"
+        >
+          <AdvancedFontSelector
+            selectedSegment={selectedSegment}
+            onStyleChange={(style) => {
+              if (selectedSegment) {
+                handleSegmentStyleUpdate(selectedSegment.id, style);
+              }
+            }}
+          />
+
+          {showEffects && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-4"
+            >
+              <EffectsPanel
+                selectedSegment={selectedSegment}
+                onEffectChange={(effect) => {
+                  if (selectedSegment) {
+                    handleSegmentStyleUpdate(selectedSegment.id, effect);
+                  }
+                }}
+              />
+            </motion.div>
+          )}
+        </motion.div>
+
+        {/* Center - Canvas */}
+        <div className="flex-1 flex flex-col">
+          {/* Video Player */}
+          <div className="h-2/3 relative bg-black">
+            <VideoPlayerAdvanced
+              videoUrl={transcription?.video_url}
+              currentTime={currentTime}
+              onTimeUpdate={setCurrentTime}
+              isPlaying={isPlaying}
+              onPlayPause={setIsPlaying}
+              segments={transcription?.segments || []}
+            />
+
+            {/* Canvas Overlay */}
+            <div className="absolute inset-0 pointer-events-none">
+              <KonvaCanvas
+                width={canvasSize.width}
+                height={canvasSize.height}
+                segments={transcription?.segments || []}
+                currentTime={currentTime}
+                selectedSegment={selectedSegment}
+                onSegmentSelect={setSelectedSegment}
+                onSegmentUpdate={handleSegmentUpdate}
+                zoom={zoom}
+              />
+            </div>
+          </div>
+
+          {/* Timeline */}
+          <div className="h-1/3 bg-gray-900/50 backdrop-blur-xl border-t border-white/10">
+            <TimelineEditor
+              segments={transcription?.segments || []}
+              currentTime={currentTime}
+              duration={transcription?.duration || 60}
+              onTimeChange={setCurrentTime}
+              onSegmentUpdate={handleSegmentUpdate}
+              selectedSegment={selectedSegment}
+              onSegmentSelect={setSelectedSegment}
+            />
+          </div>
+        </div>
+
+        {/* Right Panel - Properties */}
+        <motion.div
+          initial={{ x: 300 }}
+          animate={{ x: 0 }}
+          className="w-80 bg-black/30 backdrop-blur-xl border-l border-white/10 p-4 overflow-y-auto"
+        >
+          {selectedSegment ? (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                  <Settings className="w-5 h-5" />
+                  מאפיני הכתובית
+                </h3>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">טקסט</label>
+                    <textarea
+                      value={selectedSegment.text}
+                      onChange={(e) => handleSegmentUpdate(selectedSegment.id, { text: e.target.value })}
+                      className="w-full p-3 bg-white/10 border border-white/20 rounded-lg text-white resize-none"
+                      rows="3"
+                    />
                   </div>
-                  <p className="text-gray-600">
-                    נוצר ב-{formatDate(transcription.created_at)}
-                    {transcription.completed_at && transcription.completed_at !== transcription.created_at &&
-                      ` • הושלם ב-${formatDate(transcription.completed_at)}`
-                    }
-                  </p>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">זמן התחלה</label>
+                      <input
+                        type="number"
+                        value={selectedSegment.start}
+                        onChange={(e) => handleSegmentUpdate(selectedSegment.id, { start: parseFloat(e.target.value) })}
+                        className="w-full p-2 bg-white/10 border border-white/20 rounded-lg text-white"
+                        step="0.1"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">זמן סיום</label>
+                      <input
+                        type="number"
+                        value={selectedSegment.end}
+                        onChange={(e) => handleSegmentUpdate(selectedSegment.id, { end: parseFloat(e.target.value) })}
+                        className="w-full p-2 bg-white/10 border border-white/20 rounded-lg text-white"
+                        step="0.1"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">שקיפות</label>
+                    <Slider
+                      value={[selectedSegment.style?.opacity || 1]}
+                      onValueChange={(value) => handleSegmentStyleUpdate(selectedSegment.id, { opacity: value[0] })}
+                      max={1}
+                      min={0}
+                      step={0.1}
+                      className="w-full"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">סיבוב</label>
+                    <Slider
+                      value={[selectedSegment.style?.rotation || 0]}
+                      onValueChange={(value) => handleSegmentStyleUpdate(selectedSegment.id, { rotation: value[0] })}
+                      max={360}
+                      min={-360}
+                      step={1}
+                      className="w-full"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
-          </motion.div>
-
-          <div className="grid lg:grid-cols-3 gap-8">
-            {/* Main Content */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Transcription Content */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-              >
-                <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="flex items-center gap-2">
-                        <FileText className="w-5 h-5" />
-                        תוכן התמלול
-                      </CardTitle>
-                      <div className="flex items-center gap-2">
-                        {!isEditing && transcription.content && (
-                          <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={handleCopy}
-                              className="hover:bg-blue-50"
-                            >
-                              <Copy className="w-4 h-4 mr-1" />
-                              העתק
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setIsEditing(true)}
-                              className="hover:bg-blue-50"
-                            >
-                              <Edit className="w-4 h-4 mr-1" />
-                              ערוך
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {isEditing ? (
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-  {segments.map((seg, idx) => (
-    <div key={idx} className="border p-2 rounded bg-gray-50">
-      <div className="flex gap-2 mb-1">
-  <input
-    type="text"
-    value={seg.start}
-    onChange={(e) => {
-      const updated = [...segments];
-      updated[idx].start = e.target.value;
-      setSegments(updated);
-    }}
-    placeholder="00:00:00,000"
-    className="w-32 p-1 border rounded text-xs"
-  />
-  <span>→</span>
-  <input
-    type="text"
-    value={seg.end}
-    onChange={(e) => {
-      const updated = [...segments];
-      updated[idx].end = e.target.value;
-      setSegments(updated);
-    }}
-    placeholder="00:00:02,000"
-    className="w-32 p-1 border rounded text-xs"
-  />
-</div>
-<input
-  type="text"
-  value={seg.text}
-  onChange={(e) => {
-    const updated = [...segments];
-    updated[idx].text = e.target.value;
-    setSegments(updated);
-  }}
-  className="w-full p-1 border rounded"
-/>
-
-    </div>
-  ))}
-</div>
-
-                        <div className="flex items-center gap-2">
-                          <Button
-                            onClick={handleSave}
-                            disabled={isSaving}
-                            className="bg-green-600 hover:bg-green-700 text-white"
-                          >
-                            <Save className="w-4 h-4 mr-1" />
-                            {isSaving ? 'שומר...' : 'שמור'}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            onClick={() => {
-                              setIsEditing(false);
-if (transcription.content) {
-  const lines = transcription.content.split('\n').filter(line => line.trim() !== '');
-  const segs = lines.map((line, idx) => ({
-    start: `00:00:${(idx * 2).toString().padStart(2, '0')},000`,
-    end: `00:00:${(idx * 2 + 2).toString().padStart(2, '0')},000`,
-    text: line
-  }));
-  setSegments(segs);
-}
-setIsEditing(false);
-                            }}
-                          >
-                            <X className="w-4 h-4 mr-1" />
-                            ביטול
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {segments.length > 0 ? (
-  <div className="space-y-2">
-    {segments.map((seg, idx) => (
-      <div key={idx} className="border p-2 rounded bg-gray-50">
-        <div className="text-xs text-gray-500 mb-1">
-          {seg.start || "00:00:00,000"} → {seg.end || "00:00:00,000"}
-        </div>
-        <div>{seg.text}</div>
-      </div>
-    ))}
-  </div>
-) : (
-  <div className="text-center py-12">
-    <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-    <p className="text-gray-500">אין תוכן זמין עדיין</p>
-    {transcription.status === 'processing' && (
-      <p className="text-blue-600 mt-2">התמלול עדיין מעובד...</p>
-    )}
-  </div>
-)}
-
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </motion.div>
+          ) : (
+            <div className="text-center py-12">
+              <Move className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-300 mb-2">בחר כתובית</h3>
+              <p className="text-gray-400">לחץ על כתובית כדי לערוך אותה</p>
             </div>
-
-            {/* Sidebar */}
-            <div className="space-y-6">
-              {/* Download Actions */}
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.3 }}
-              >
-                <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Download className="w-5 h-5" />
-                      הורדת קבצים
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {availableFiles.length > 0 ? (
-                      <div className="grid grid-cols-1 gap-3">
-                        {availableFiles.map((fileType) => (
-                          <Button
-                            key={fileType}
-                            variant="outline"
-                            className="w-full justify-start hover:bg-blue-50"
-                            onClick={() => downloadFile(fileType)}
-                          >
-                            <Download className="w-4 h-4 mr-2" />
-                            {fileType.toUpperCase()}
-                          </Button>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-6 text-gray-500">
-                        <Download className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                        <p>אין קבצים זמינים להורדה</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </motion.div>
-
-              {/* Details */}
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.4 }}
-              >
-                <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl">
-                  <CardHeader>
-                    <CardTitle>פרטי התמלול</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-3 text-sm">
-                      <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                        <span className="text-gray-500 flex items-center gap-2">
-                          <Calendar className="w-4 h-4" />
-                          תאריך יצירה
-                        </span>
-                        <span className="font-medium">{formatDate(transcription.created_at)}</span>
-                      </div>
-
-                      {transcription.completed_at && (
-                        <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                          <span className="text-gray-500 flex items-center gap-2">
-                            <CheckCircle className="w-4 h-4" />
-                            הושלם ב
-                          </span>
-                          <span className="font-medium">{formatDate(transcription.completed_at)}</span>
-                        </div>
-                      )}
-
-                      {transcription.duration && (
-                        <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                          <span className="text-gray-500 flex items-center gap-2">
-                            <Timer className="w-4 h-4" />
-                            משך
-                          </span>
-                          <span className="font-medium">{formatDuration(transcription.duration)}</span>
-                        </div>
-                      )}
-
-                      {transcription.language && (
-                        <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                          <span className="text-gray-500 flex items-center gap-2">
-                            <Languages className="w-4 h-4" />
-                            שפה
-                          </span>
-                          <span className="font-medium">{transcription.language}</span>
-                        </div>
-                      )}
-
-                      {transcription.user_id && (
-                        <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                          <span className="text-gray-500 flex items-center gap-2">
-                            <User className="w-4 h-4" />
-                            משתמש
-                          </span>
-                          <span className="font-medium text-xs">{transcription.user_id}</span>
-                        </div>
-                      )}
-
-                      {transcription.task_id && (
-                        <div className="flex items-center justify-between py-2">
-                          <span className="text-gray-500">מזהה משימה</span>
-                          <span className="font-medium text-xs font-mono bg-gray-100 px-2 py-1 rounded">
-                            {transcription.task_id}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </div>
-          </div>
-        </div>
+          )}
+        </motion.div>
       </div>
     </div>
   );

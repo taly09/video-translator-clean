@@ -72,10 +72,19 @@ export function TranscriptionCard({ item, index, onClick }) {
                   {item.title}
                 </h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-{item.created_date && !isNaN(new Date(item.created_date))
-  ? format(new Date(item.created_date), "dd/MM/yyyy • HH:mm")
-  : "תאריך לא זמין"}
-                </p>
+  {item.created_date && !isNaN(new Date(item.created_date))
+    ? new Date(item.created_date).toLocaleString(navigator.language || "he-IL", {
+
+        weekday: "short",
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit"
+      })
+    : "תאריך לא זמין"}
+</p>
+
               </div>
             </div>
 

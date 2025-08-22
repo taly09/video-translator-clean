@@ -39,6 +39,10 @@ export function Alert({ children, variant = "default", className = "" }) {
   );
 }
 
+export function AlertTitle({ children, className = "" }) {
+  return <div className={`font-semibold text-sm ${className}`}>{children}</div>;
+}
+
 export function AlertDescription({ children, className = "" }) {
   return <div className={`text-sm ${className}`}>{children}</div>;
 }

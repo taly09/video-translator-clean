@@ -28,6 +28,7 @@ import { User } from "@/entities/User";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { TranscriptionCard } from "@/components/dashboard/TranscriptionCard";
+import { Transcription } from "@/entities/Transcription";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -47,12 +48,22 @@ export default function Dashboard() {
   });
 
   useEffect(() => {
-    if (user?.full_name) {
-      const first = user.full_name.split(" ")[0];
-      const isHebrew = /^[\u0590-\u05FF]/.test(first);
-      setDisplayName(isHebrew ? first : "משתמש");
+    async function fetchUser() {
+        try {
+            const userData = await User.me();
+            setUser(userData);
+            if (userData?.full_name) {
+              const first = userData.full_name.split(" ")[0];
+              const isHebrew = /^[\u0590-\u05FF]/.test(first);
+              setDisplayName(isHebrew ? first : "משתמש");
+            }
+        } catch(e) {
+            console.error("Failed to fetch user", e);
+        }
     }
-  }, [user]);
+    fetchUser();
+    fetchData();
+  }, []);
 
   const formatDuration = (seconds) => {
     if (!seconds || isNaN(seconds)) return "0m";
@@ -66,76 +77,46 @@ export default function Dashboard() {
   };
 
   const fetchData = async () => {
-    try {
-      setIsLoading(true);
+  try {
+    setIsLoading(true);
 
-      // קבלת נתוני המשתמש
-      try {
-        const userResponse = await fetch('/api/user/me', {
-          credentials: 'include'
-        });
-        if (userResponse.ok) {
-          const userResult = await userResponse.json();
-          if (userResult.status === 'success' && userResult.data.user) {
-            setUser(userResult.data.user);
-          }
-        }
-      } catch (err) {
-        console.error("Error fetching user:", err);
-      }
+const { results, total } = await Transcription.list({ limit: 200 });
+console.log("📦 results:", results);
 
-      // קבלת רשימת התמלולים
-      const transcriptionsResponse = await fetch('/api/transcriptions?limit=20', {
-        credentials: 'include'
-      });
 
-      if (transcriptionsResponse.ok) {
-        const transcriptionsResult = await transcriptionsResponse.json();
-        console.log("📌 Transcriptions API response:", transcriptionsResult);
 
-        if (transcriptionsResult.status === 'success' && Array.isArray(transcriptionsResult.data)) {
-          const data = transcriptionsResult.data.map(t => ({
-            ...t,
-            id: t._id,
-            title: t.title || t.file_name || 'תמלול ללא שם',
-            status: t.status || 'completed'
-          }));
+    setTranscriptions(results.map(t => ({ ...t, task_id: t.id })));
 
-          setTranscriptions(data);
+    // חישוב סטטיסטיקות
+    const now = new Date();
+    const thisMonth = results.filter((t) => {
+const created = new Date(t.created_at || t.created_date);
+      return (
+        created.getMonth() === now.getMonth() &&
+        created.getFullYear() === now.getFullYear()
+      );
+    });
 
-          // חישוב סטטיסטיקות
-          const now = new Date();
-          const thisMonth = data.filter((t) => {
-            const created = new Date(t.created_at);
-            return (
-              created.getMonth() === now.getMonth() &&
-              created.getFullYear() === now.getFullYear()
-            );
-          });
+    setStats({
+      total: total,
+      thisMonth: thisMonth.length,
+      totalDuration: results.reduce((sum, t) => sum + (t.duration || 0), 0),
+      averageAccuracy: 98
+    });
 
-          setStats({
-            total: data.length,
-            thisMonth: thisMonth.length,
-            totalDuration: data.reduce((sum, t) => sum + (t.duration || 0), 0),
-            averageAccuracy: 98
-          });
-        }
-      }
-    } catch (err) {
-      console.error("Error fetching data:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  } catch (err) {
+    console.error("Error fetching data:", err);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+
+    ;
 
   const filteredTranscriptions = transcriptions.filter((t) => {
     const titleMatch = (t.title || t.file_name || '').toLowerCase().includes(search.toLowerCase());
-    const contentMatch = (t.content || '').toLowerCase().includes(search.toLowerCase());
-    const matchesSearch = titleMatch || contentMatch;
+    const matchesSearch = titleMatch;
     const matchesStatus = statusFilter === "all" || t.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -145,9 +126,10 @@ export default function Dashboard() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
-        * {
-          font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        }
+        body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
 
         .glass-effect {
           backdrop-filter: blur(20px);
@@ -232,16 +214,6 @@ export default function Dashboard() {
           >
             <ThemeToggle />
 
-            <Link to={createPageUrl("WhatsAppUpload")}>
-              <Button
-                variant="outline"
-                className="glass-effect border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-              >
-                <MessageSquare className="w-4 h-4 mr-2" />
-                WhatsApp
-              </Button>
-            </Link>
-
             <Link to={createPageUrl("Upload")}>
               <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 animate-gradient">
                 <Upload className="w-4 h-4 mr-2" />
@@ -306,12 +278,17 @@ export default function Dashboard() {
                     </CardTitle>
 
                     <div className="flex items-center gap-2">
-                      <Link to={createPageUrl("Transcriptions")}>
-                        <Button variant="ghost" size="sm" className="hover:scale-105 transition-all duration-300">
-                          צפה בכל
-                          <ChevronRight className="w-4 h-4 mr-1" />
-                        </Button>
-                      </Link>
+<Link to="/transcriptions">
+  <Button
+    variant="ghost"
+    size="sm"
+    className="hover:scale-105 transition-all duration-300"
+  >
+    צפה בכל
+    <ChevronRight className="w-4 h-4 mr-1" />
+  </Button>
+</Link>
+
                     </div>
                   </div>
                 </CardHeader>
@@ -353,14 +330,21 @@ export default function Dashboard() {
                   ) : filteredTranscriptions.length ? (
                     <div className="space-y-4">
                       <AnimatePresence>
-                        {filteredTranscriptions.slice(0, 6).map((item, index) => (
-                          <TranscriptionCard
-                            key={item.id}
-                            item={item}
-                            index={index}
-                            onClick={() => navigate(createPageUrl(`TranscriptionView?id=${item.task_id}`))}
-                          />
-                        ))}
+                        {filteredTranscriptions.slice(0, 6).map((item, index) => {
+  console.log("🔍 item:", item); // ⬅️ הוספנו כאן כדי לראות את כל האובייקט
+  return (
+    <TranscriptionCard
+      key={item.id}
+      item={item}
+      index={index}
+      onClick={() => {
+        console.log("🧪 item.id:", item.id);
+        navigate(createPageUrl(`Studio?id=${item.id}`));
+      }}
+    />
+  );
+})}
+
                       </AnimatePresence>
 
                       {filteredTranscriptions.length > 6 && (
@@ -370,14 +354,14 @@ export default function Dashboard() {
                           animate={{ opacity: 1 }}
                           transition={{ delay: 0.5 }}
                         >
-                           <Link to={createPageUrl("Transcriptions")}>
-                            <Button
-                              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-                            >
-                              הצג את כל התמלולים
-                              <ChevronRight className="w-4 h-4 mr-2" />
-                            </Button>
-                          </Link>
+                           <Link to="/transcriptions">
+  <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+    הצג את כל התמלולים
+    <ChevronRight className="w-4 h-4 mr-2" />
+  </Button>
+</Link>
+
+
                         </motion.div>
                       )}
                     </div>
@@ -419,12 +403,6 @@ export default function Dashboard() {
                     <Button variant="outline" className="w-full justify-start gap-3 glass-effect border-0 hover:scale-105 transition-all duration-300">
                       <Upload className="w-4 h-4" />
                       העלה וידאו
-                    </Button>
-                  </Link>
-                  <Link to={createPageUrl("WhatsAppUpload")}>
-                    <Button variant="outline" className="w-full justify-start gap-3 glass-effect border-0 hover:scale-105 transition-all duration-300">
-                      <MessageSquare className="w-4 h-4" />
-                      תמלל WhatsApp
                     </Button>
                   </Link>
                   <Link to={createPageUrl("LiveTranscription")}>

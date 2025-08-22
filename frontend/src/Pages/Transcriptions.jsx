@@ -30,7 +30,7 @@ export default function Transcriptions() {
   setIsLoading(true);
   try {
     const response = await Transcription.list({ limit: 50, skip: 0 });
-    setTranscriptions(Array.isArray(response.data) ? response.data : []);
+setTranscriptions(Array.isArray(response.results) ? response.results : []);
   } catch (error) {
     console.error("Error loading transcriptions:", error);
     setTranscriptions([]);
@@ -157,7 +157,7 @@ export default function Transcriptions() {
           {filteredTranscriptions
             .filter(t => !!t.id) // ✅ דלג על תמלולים בלי ID
             .map((transcription) => (
-              <Link key={transcription.id} to={createPageUrl("TranscriptionView") + `?id=${transcription.id}`}>
+<Link key={transcription.id} to={`/studio?id=${transcription.id}`}>
                 <Card className="cursor-pointer hover:shadow-md transition-all h-full flex flex-col">
                   <CardContent className="p-6 flex-grow">
                     <h3 className="font-bold text-xl mb-3 line-clamp-1">{transcription.title}</h3>

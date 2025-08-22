@@ -10,18 +10,34 @@ export const Transcription = {
     const json = await res.json();
 
     return {
-      results: Array.isArray(json.results) ? json.results : [],
-      total: json.total || 0,
+      results: Array.isArray(json.data)
+        ? json.data.map((t) => ({
+            ...t,
+            id: t.id || t.task_id || crypto.randomUUID(), // fallback חכם
+            title: t.title || t.file_name || "ללא שם",
+            created_date: t.created_date || t.created_at || null,
+            duration: t.duration || 0,
+            accuracy: t.accuracy || null,
+            language: t.language || "auto",
+            source_type: t.source_type || "upload", // "live" / "whatsapp" / "upload"
+            status: t.status || "unknown",
+          }))
+        : [],
+      total: Array.isArray(json.data) ? json.data.length : 0,
     };
   },
+
 
   async get(id) {
     const res = await fetch(`/api/transcriptions/${id}`, {
       method: "GET",
       credentials: "include",
     });
+
     if (!res.ok) throw new Error(`Failed to fetch transcription with ID ${id}`);
-    return await res.json();
+
+    const json = await res.json();
+    return json.data; // ✅ מחזיר רק את ה־data
   },
 
   async create(data) {
@@ -62,7 +78,6 @@ export const Transcription = {
     return true;
   },
 
-  // 🆕 פונקציה לעדכון תמלול (למשל תוכן SRT)
   async update(id, data) {
     const res = await fetch(`/api/transcriptions/${id}`, {
       method: "PUT",
@@ -76,7 +91,6 @@ export const Transcription = {
     return await res.json();
   },
 
-  // 🆕 פונקציה לקריאה להטמעת כתוביות
   async burn(id) {
     const res = await fetch(`/api/transcriptions/burn/${id}`, {
       method: "POST",
@@ -86,7 +100,6 @@ export const Transcription = {
     return await res.json();
   },
 
-  // 🆕 פונקציה לסיכום AI
   async summary(id) {
     const res = await fetch(`/api/transcriptions/summary/${id}`, {
       method: "GET",
@@ -96,13 +109,12 @@ export const Transcription = {
     return await res.json();
   },
 
-  // 🆕 בדיקת מגבלות שימוש (Freemium)
   async checkAllowance() {
     const res = await fetch(`/api/transcriptions/check-allowance`, {
       method: "GET",
       credentials: "include",
     });
     if (!res.ok) throw new Error("Failed to check allowance");
-    return await res.json(); // לדוגמה: { allowed: true, remaining_minutes: 23, plan: "free" }
+    return await res.json();
   },
 };

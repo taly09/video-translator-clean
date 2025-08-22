@@ -1,454 +1,495 @@
-import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Upload, AlertCircle, HelpCircle, Sparkles, Settings, Globe } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { UploadZone } from "@/upload/UploadZone";
-import { ProcessingSteps } from "@/upload/ProcessingSteps";
-import { useTranslation } from "react-i18next";
-import { User } from "@/entities/User";
-import { useNavigate } from "react-router-dom";
+
+import React, { useState, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import {
+  Upload as UploadIcon,
+  Video,
+  Sparkles,
+  Mic,
+  Globe,
+  FileText,
+  CheckCircle,
+  AlertCircle,
+  ArrowRight,
+  Camera,
+  Smartphone,
+  Brain,
+  Wand2 // Added Wand2 icon for the new studio button
+} from 'lucide-react';
+import { UploadFile, ExtractDataFromUploadedFile } from '@/integrations/Core';
+import { Transcription } from '@/entities/Transcription';
+import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from "@/utils/createPageUrl";
-import useSSE from "@/hooks/useSSE";
-
-const API = "http://localhost:8765/api/transcribe";
-
-export default function UploadPage() {
-  const { t } = useTranslation();
-  const navigate = useNavigate();
-
-  const [file, setFile] = useState(null);
-  const [language, setLanguage] = useState("auto");
-  const [translateTo, setTranslateTo] = useState("");
-  const [embedSubs, setEmbedSubs] = useState(true);
-  const [taskId, setTaskId] = useState(null);
-  const [step, setStep] = useState("starting");
-  const [progress, setProgress] = useState(0);
-  const [error, setError] = useState(null);
-  const [user, setUser] = useState(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [customTaskId, setCustomTaskId] = useState(null);
-
-
-  useEffect(() => {
-    User.me().then(setUser).catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    const savedId = localStorage.getItem("active_task_id");
-    if (savedId) {
-      setTaskId(savedId);
-      setIsProcessing(true);
-      setStep("processing");
-    }
-  }, []);
-
-  useSSE(
-  taskId,
-  (data) => {
-    console.log("✅ [SSE] success data:", data);
-
-    if (data.progress !== undefined) {
-      setProgress(data.progress);
-      console.log("📈 [SSE] Progress updated:", data.progress);
-    }
-
-    if (data.step) {
-      setStep(data.step);
-      console.log("🔄 [SSE] Step updated:", data.step);
-    }
-
-    if (["completed", "SUCCESS"].includes(data.status)) {
-      console.log("🏁 [SSE] Transcription completed. Navigating to transcription view.");
-
-      // נקה סטייטים ולוקאל סטורג'
-      const targetId = customTaskId;
-      localStorage.removeItem("active_task_id");
-      localStorage.removeItem("custom_task_id");
-      setIsProcessing(false);
-      setTaskId(null);
-      setCustomTaskId(null);
-
-      if (targetId) {
-        const url = createPageUrl(`TranscriptionView?id=${targetId}`);
-        console.log("📝 [SSE] Navigating to:", url);
-        navigate(url);
-      } else {
-        console.warn("❗ [SSE] customTaskId חסר. מנווט לדשבורד.");
-        navigate(createPageUrl("Dashboard"));
-      }
-    }
-  },
-  (err) => {
-    console.error("❌ [SSE] Error handler:", err);
-    setError("אירעה שגיאה במהלך העיבוד.");
-    setIsProcessing(false);
-  }
-);
-
-
-
-  const handleUpload = async () => {
-  console.log("⚡ handleUpload נלחץ");
-  if (!file) {
-    console.error("❌ לא נבחר קובץ");
-    setError("יש לבחור קובץ.");
-    return;
-  }
-
-  console.log("📦 קובץ נבחר:", file.name, file.size);
-  setIsProcessing(true);
-  setError(null);
-  setStep("starting");
-  setProgress(0);
-
-  const form = new FormData();
-form.append("video", file);
-form.append("language", language);
-if (translateTo && translateTo !== "null" && translateTo !== "") {
-  form.append("translate_to", translateTo);
+function guestHeaders() {
+  const gid = localStorage.getItem("guest_id");
+  const headers = {};
+  if (gid) headers["X-Guest-Id"] = gid;
+  return { headers, credentials: "include" };
 }
-// אם translateTo ריק, אל תוסיף אותו בכלל
-form.append("embed_subtitles", embedSubs.toString()); // וודא שזה מחרוזת
 
 
-  // 🔥 דיבוג
-  console.log("🚀 שולח ל-upload URL:", `${API}/upload`);
-  console.log("🚀 FormData video:", form.get("video"));
-  console.log("🚀 FormData language:", form.get("language"));
-  console.log("🚀 FormData translate_to:", form.get("translate_to"));
-  console.log("🚀 FormData embed_subtitles:", form.get("embed_subtitles"));
+export default function Upload() {
+  const navigate = useNavigate();
+  const fileInputRef = useRef(null);
+  const [uploadStep, setUploadStep] = useState('select'); // select, uploading, processing, complete
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [language, setLanguage] = useState('he');
+  const [quality, setQuality] = useState('high');
+  const [error, setError] = useState(null);
+  const [transcriptionId, setTranscriptionId] = useState(null);
+  const pollTaskStatus = async (celeryId, customId) => {
+  let attempts = 0;
+  const maxAttempts = 60;
 
-  try {
-    const res = await fetch(`${API}/upload`, {
-      method: "POST",
-      body: form,
-      credentials: "include"
-    });
+  const interval = setInterval(async () => {
+    try {
+      // שלב א: סטטוס לפי Celery (לא דורש זהות)
+      const r = await fetch(`/api/transcriptions/status/${celeryId}`);
+      const j = await r.json();
+      const status = j?.data?.status;
 
-    console.log("✅ upload response status:", res.status);
-    const data = await res.json();
-    console.log("✅ upload response data:", data);
+      if (status === "SUCCESS" || status === "COMPLETED") {
+        clearInterval(interval);
 
-    if (data.data && data.data.task_id && data.data.custom_task_id) {
-      console.log("✅ task_id שהתקבל:", data.data.task_id);
-      console.log("✅ custom_task_id שהתקבל:", data.data.custom_task_id);
-      setTaskId(data.data.task_id);
-      setCustomTaskId(data.data.custom_task_id);
-      localStorage.setItem("active_task_id", data.data.task_id);
-      localStorage.setItem("custom_task_id", data.data.custom_task_id);
-    } else {
-      console.error("❌ תשובת השרת חסרה task_id או custom_task_id:", data);
-      throw new Error("לא התקבל מזהה משימה");
+        // שלב ב: שליפת פרטי התמלול לפי customId — עם זהות אורח
+        const { headers, credentials } = guestHeaders();
+        const det = await fetch(`/api/transcriptions/${customId}`, { headers, credentials });
+        if (!det.ok) {
+          setError("הסטטוס הצליח, אבל לא הצלחתי להביא פרטי תמלול.");
+          setUploadStep("select");
+          return;
+        }
+
+        setUploadProgress(100);
+        setUploadStep("complete");
+      } else if (status === "FAILURE") {
+        clearInterval(interval);
+        setError("העיבוד נכשל. נסה שוב.");
+        setUploadStep("select");
+      } else {
+        attempts++;
+        if (attempts >= maxAttempts) {
+          clearInterval(interval);
+          setError("העיבוד מתעכב מהרגיל. נסה לרענן או לנסות שוב.");
+          setUploadStep("select");
+        }
+      }
+    } catch (err) {
+      clearInterval(interval);
+      setError("שגיאה בבדיקת סטטוס");
+      setUploadStep("select");
     }
-  } catch (err) {
-    console.error("❌ Upload failed", err);
-    setError(err.message || "שגיאה לא צפויה");
-    setIsProcessing(false);
-  }
+  }, 1500);
 };
 
 
 
-  const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  const languages = [
+    { code: 'he', name: 'עברית', flag: '🇮🇱' },
+    { code: 'en', name: 'English', flag: '🇺🇸' },
+    { code: 'ar', name: 'العربية', flag: '🇸🇦' },
+    { code: 'es', name: 'Español', flag: '🇪🇸' },
+    { code: 'fr', name: 'Français', flag: '🇫🇷' },
+    { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
+    { code: 'ru', name: 'Русский', flag: '🇷🇺' },
+    { code: 'zh', name: '中文', flag: '🇨🇳' }
+  ];
+
+  const handleFileSelect = (files) => {
+    const file = files[0];
+    if (!file) return;
+
+    const validTypes = ['video/mp4', 'video/mov', 'video/avi', 'video/mkv', 'audio/mp3', 'audio/wav', 'audio/m4a'];
+    if (!validTypes.includes(file.type)) {
+      setError('נא בחר קובץ וידאו או אודיו תקין');
+      return;
+    }
+
+    if (file.size > 500 * 1024 * 1024) {
+      setError('גודל הקובץ לא יכול לעלות על 500MB');
+      return;
+    }
+
+    setSelectedFile(file);
+    setError(null);
+    setUploadStep('ready');
+  };
+
+  const handleUpload = async () => {
+  if (!selectedFile) return;
+
+  try {
+    setUploadStep('uploading');
+    setUploadProgress(0);
+
+    const formData = new FormData();
+    formData.append('video', selectedFile);
+    formData.append('language', language);
+
+    const uploadInterval = setInterval(() => {
+      setUploadProgress(prev => {
+        if (prev >= 90) { clearInterval(uploadInterval); return 90; }
+        return prev + 10;
+      });
+    }, 200);
+
+    // ⬅️ מכאן להחליף
+    const { headers } = guestHeaders();
+
+    const response = await fetch('/api/transcribe/upload', {
+      method: 'POST',
+      body: formData,
+      credentials: 'include',   // מאפשר קוקי guest_id
+      headers,                  // שולח X-Guest-Id אם קיים
+    });
+
+    clearInterval(uploadInterval);
+
+    if (!response.ok) throw new Error('Upload failed');
+
+    const data = await response.json();
+
+    // שמירת guest_id חדש אם השרת יצר אחד
+    const newGuest = data?.data?.guest_id;
+    if (newGuest && !localStorage.getItem("guest_id")) {
+      localStorage.setItem("guest_id", newGuest);
+    }
+
+    const celeryId = data.data.task_id;        // Celery Task ID
+    const customId = data.data.custom_task_id; // המזהה שלך
+    setTranscriptionId(customId);
+
+    setUploadProgress(100);
+    setUploadStep('processing');
+
+    setTimeout(() => {
+      pollTaskStatus(celeryId, customId); // פולינג עם שני מזהים
+    }, 1500);
+    // ⬅️ עד כאן הבלוק החדש
+
+  } catch (err) {
+    console.error('Upload error:', err);
+    setError('שגיאה בהעלאת הקובץ. נסה שוב.');
+    setUploadStep('select');
+  }
+};
+
+
+  // Renamed from openPreviewPage to openStudioPage and updated navigation target
+  const openStudioPage = () => {
+    if (transcriptionId) {
+const url = createPageUrl(`Studio?id=${transcriptionId}`);
+      navigate(url);
+    } else {
+      console.error("אין transcriptionId!");
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/30 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/30 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-6">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-        
-        * {
-          font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        }
-
         .glass-effect {
           backdrop-filter: blur(20px);
           background: linear-gradient(145deg,
-            rgba(255, 255, 255, 0.8) 0%,
-            rgba(255, 255, 255, 0.6) 100%);
+            rgba(255, 255, 255, 0.9) 0%,
+            rgba(255, 255, 255, 0.7) 100%);
+          border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .dark .glass-effect {
           background: linear-gradient(145deg,
-            rgba(30, 41, 59, 0.8) 0%,
-            rgba(30, 41, 59, 0.6) 100%);
+            rgba(30, 41, 59, 0.9) 0%,
+            rgba(30, 41, 59, 0.7) 100%);
+          border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .gradient-text {
-          background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
+        .upload-zone {
+          transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
 
-        .floating-animation {
-          animation: float 6s ease-in-out infinite;
-        }
-
-        @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-10px) rotate(2deg); }
+        .upload-zone:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 20px 40px rgba(59, 130, 246, 0.1);
         }
       `}</style>
 
-      <div className="container mx-auto px-6 py-8 max-w-4xl">
-        {/* Header */}
+      <div className="max-w-4xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-8"
+          className="text-center mb-12"
         >
-          <div className="flex items-center justify-center gap-4 mb-6">
-            <motion.div
-              animate={{ rotate: [0, 10, -10, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-xl floating-animation"
-            >
-              <Upload className="w-8 h-8 text-white" />
-            </motion.div>
-            <ThemeToggle />
-          </div>
-
-          <h1 className="text-4xl lg:text-5xl font-bold mb-4">
-            <span className="gradient-text">העלאת קובץ לתמלול</span>
+          <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+            העלה וצור כתוביות מדהימות
           </h1>
-          <p className="text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed">
-            תמלול אוטומטי מדויק עם AI מתקדם, כולל תרגום וכתוביות מוטמעות
+          <p className="text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto">
+            טכנולוגיית AI מתקדמת לתמלול וכתוביות ויזואליות ברמה מקצועית
           </p>
         </motion.div>
 
-        {/* Info Banner */}
-        {!isProcessing && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="mb-8"
-          >
-            <div className="glass-effect border-0 rounded-2xl p-6 shadow-xl">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <Sparkles className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">
-                    תמלול מתקדם עם AI
-                  </h3>
-                  <p className="text-slate-600 dark:text-slate-400">
-                    תומך בקבצי MP4, MP3, WAV • עד 100MB • דיוק של 98%+
-                  </p>
-                </div>
-                <Badge className="mr-auto bg-gradient-to-r from-emerald-500 to-teal-600 text-white">
-                  חדש
-                </Badge>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Error Alert */}
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="mb-6"
-          >
-            <Alert variant="destructive" className="glass-effect border-red-200 dark:border-red-800">
-              <AlertCircle className="w-5 h-5" />
-              <AlertDescription className="font-medium">{error}</AlertDescription>
-            </Alert>
-          </motion.div>
-        )}
-
         <AnimatePresence mode="wait">
-          {isProcessing ? (
+          {uploadStep === 'select' && (
             <motion.div
-              key="processing"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.6 }}
+              key="select"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.05 }}
+              transition={{ duration: 0.3 }}
             >
-              <Card className="glass-effect border-0 shadow-2xl">
-                <CardContent className="p-8">
-                  <ProcessingSteps currentStep={step} progress={progress} />
-                </CardContent>
-              </Card>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="upload-form"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.6 }}
-              className="space-y-8"
-            >
-              {/* Upload Zone */}
-              <Card className="glass-effect border-0 shadow-2xl overflow-hidden">
-                <CardContent className="p-8">
-                  <UploadZone onFileSelected={setFile} isUploading={isProcessing} />
-
-                  {file && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="mt-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-semibold text-green-900 dark:text-green-100">
-                            ✅ קובץ נבחר בהצלחה
-                          </p>
-                          <p className="text-sm text-green-700 dark:text-green-300 mt-1">
-                            {file.name} • {formatFileSize(file.size)}
-                          </p>
+              <Card className="glass-effect border-0 shadow-2xl upload-zone">
+                <CardContent className="p-12">
+                  <div
+                    className="border-2 border-dashed border-blue-300 dark:border-blue-600 rounded-2xl p-12 text-center cursor-pointer hover:border-blue-500 transition-colors"
+                    onClick={() => fileInputRef.current?.click()}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      handleFileSelect(e.dataTransfer.files);
+                    }}
+                    onDragOver={(e) => e.preventDefault()}
+                  >
+                    <div className="space-y-6">
+                      <div className="flex justify-center">
+                        <div className="w-24 h-24 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg">
+                          <UploadIcon className="w-12 h-12 text-white" />
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setFile(null)}
-                          className="text-green-700 hover:text-green-900 dark:text-green-300 dark:hover:text-green-100"
-                        >
-                          שנה קובץ
-                        </Button>
                       </div>
-                    </motion.div>
+
+                      <div>
+                        <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">
+                          גרור קבצים או לחץ להעלאה
+                        </h3>
+                        <p className="text-slate-600 dark:text-slate-300 text-lg">
+                          תומך בוידאו ואודיו: MP4, MOV, AVI, MP3, WAV
+                        </p>
+                      </div>
+
+                      <div className="flex justify-center gap-6 text-sm text-slate-500 dark:text-slate-400">
+                        <div className="flex items-center gap-2">
+                          <Video className="w-5 h-5" />
+                          <span>עד 500MB</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="w-5 h-5" />
+                          <span>איכות HD</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Brain className="w-5 h-5" />
+                          <span>AI מתקדם</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="video/*,audio/*"
+                    onChange={(e) => handleFileSelect(e.target.files)}
+                    className="hidden"
+                  />
+
+                  {error && (
+                    <Alert variant="destructive" className="mt-6">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>שגיאה</AlertTitle>
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
                   )}
                 </CardContent>
               </Card>
+            </motion.div>
+          )}
 
-              {/* Settings */}
+          {uploadStep === 'ready' && selectedFile && (
+            <motion.div
+              key="ready"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+            >
               <Card className="glass-effect border-0 shadow-2xl">
                 <CardHeader>
-                  <CardTitle className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-3">
-                    <Settings className="w-6 h-6" />
-                    הגדרות תמלול
+                  <CardTitle className="flex items-center gap-3">
+                    <Video className="w-6 h-6 text-blue-600" />
+                    קובץ נבחר
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="grid gap-6 md:grid-cols-2">
-                    {/* Source Language */}
-                    <div className="space-y-2">
-                      <Label className="text-base font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                        <Globe className="w-4 h-4" />
-                        שפת מקור
-                      </Label>
+                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-6">
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
+                        <FileText className="w-8 h-8 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-slate-800 dark:text-slate-100">
+                          {selectedFile.name}
+                        </h3>
+                        <p className="text-slate-600 dark:text-slate-300">
+                          {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+                        </p>
+                      </div>
+                      <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
+                        מוכן לעיבוד
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                        שפת התמלול
+                      </label>
                       <Select value={language} onValueChange={setLanguage}>
-                        <SelectTrigger className="glass-effect border-0 shadow-sm h-12">
-                          <SelectValue placeholder="בחר שפה" />
+                        <SelectTrigger className="glass-effect border-0">
+                          <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="auto">🤖 זיהוי אוטומטי</SelectItem>
-                          <SelectItem value="he">🇮🇱 עברית</SelectItem>
-                          <SelectItem value="en">🇺🇸 אנגלית</SelectItem>
-                          <SelectItem value="fr">🇫🇷 צרפתית</SelectItem>
-                          <SelectItem value="ar">🇸🇦 ערבית</SelectItem>
-                          <SelectItem value="ru">🇷🇺 רוסית</SelectItem>
-                          <SelectItem value="es">🇪🇸 ספרדית</SelectItem>
-                          <SelectItem value="de">🇩🇪 גרמנית</SelectItem>
+                          {languages.map((lang) => (
+                            <SelectItem key={lang.code} value={lang.code}>
+                              <div className="flex items-center gap-2">
+                                <span>{lang.flag}</span>
+                                <span>{lang.name}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
 
-                    {/* Target Language */}
-                    <div className="space-y-2">
-                      <Label className="text-base font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                        <Globe className="w-4 h-4" />
-                        תרגום ל...
-                      </Label>
-                      <Select value={translateTo} onValueChange={setTranslateTo}>
-                        <SelectTrigger className="glass-effect border-0 shadow-sm h-12">
-                          <SelectValue placeholder="ללא תרגום" />
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                        איכות עיבוד
+                      </label>
+                      <Select value={quality} onValueChange={setQuality}>
+                        <SelectTrigger className="glass-effect border-0">
+                          <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value={null}>🚫 ללא תרגום</SelectItem>
-                          <SelectItem value="he">🇮🇱 עברית</SelectItem>
-                          <SelectItem value="en">🇺🇸 אנגלית</SelectItem>
-                          <SelectItem value="fr">🇫🇷 צרפתית</SelectItem>
-                          <SelectItem value="ar">🇸🇦 ערבית</SelectItem>
-                          <SelectItem value="ru">🇷🇺 רוסית</SelectItem>
-                          <SelectItem value="es">🇪🇸 ספרדית</SelectItem>
-                          <SelectItem value="de">🇩🇪 גרמנית</SelectItem>
+                          <SelectItem value="high">איכות גבוהה (מומלץ)</SelectItem>
+                          <SelectItem value="medium">איכות בינונית</SelectItem>
+                          <SelectItem value="fast">מהיר</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                   </div>
 
-                  {/* Embed Subtitles Toggle */}
-                  <div className="flex items-center justify-between p-4 glass-effect rounded-xl">
-                    <div className="space-y-1">
-                      <Label className="text-base font-semibold text-slate-900 dark:text-slate-100">
-                        צור וידאו עם כתוביות מוטמעות
-                      </Label>
-                      <p className="text-sm text-slate-600 dark:text-slate-400">
-                        קבל וידאו עם כתוביות שרופות בתוכו, מוכן לשיתוף
-                      </p>
-                    </div>
-                    <Switch
-                      checked={embedSubs}
-                      onCheckedChange={setEmbedSubs}
-                      className="data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-blue-500 data-[state=checked]:to-purple-600"
-                    />
+                  <div className="flex gap-4">
+                    <Button
+                      onClick={() => {
+                        setSelectedFile(null);
+                        setUploadStep('select');
+                      }}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      בטל
+                    </Button>
+                    <Button
+                      onClick={handleUpload}
+                      className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                    >
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      התחל עיבוד
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
+            </motion.div>
+          )}
 
-              {/* Action Button */}
-              <div className="flex justify-center">
-                <Button
-                  onClick={handleUpload}
-                  disabled={!file || isProcessing}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 px-12 py-4 text-lg font-bold rounded-2xl"
-                >
-                  <Sparkles className="w-6 h-6 mr-3" />
-                  התחל תמלול מתקדם
-                  <Upload className="w-6 h-6 mr-3" />
-                </Button>
-              </div>
-
-              {/* Login Suggestion */}
-              {!user && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.8 }}
-                  className="glass-effect rounded-2xl p-6 border border-amber-200 dark:border-amber-800 shadow-lg"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg floating-animation">
-                      <HelpCircle className="w-6 h-6 text-white" />
+          {(uploadStep === 'uploading' || uploadStep === 'processing') && (
+            <motion.div
+              key="processing"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+            >
+              <Card className="glass-effect border-0 shadow-2xl">
+                <CardContent className="p-12 text-center">
+                  <div className="space-y-6">
+                    <div className="w-24 h-24 mx-auto bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center animate-pulse">
+                      {uploadStep === 'uploading' ? (
+                        <UploadIcon className="w-12 h-12 text-white" />
+                      ) : (
+                        <Brain className="w-12 h-12 text-white" />
+                      )}
                     </div>
+
                     <div>
-                      <h3 className="font-bold text-amber-900 dark:text-amber-100 mb-2">
-                        💾 שמור את התמלולים שלך
+                      <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">
+                        {uploadStep === 'uploading' ? 'מעלה קובץ...' : 'מעבד באמצעות AI...'}
                       </h3>
-                      <p className="text-amber-800 dark:text-amber-200 leading-relaxed">
-                        התחבר כדי לשמור היסטוריית תמלולים, לגשת מכל מכשיר ולקבל תכונות מתקדמות נוספות
+                      <p className="text-slate-600 dark:text-slate-300">
+                        {uploadStep === 'uploading' 
+                          ? 'העלאה מהירה ומאובטחת לשרתים שלנו'
+                          : 'מנתח אודיו ויוצר כתוביות מדויקות'
+                        }
                       </p>
+                    </div>
+
+                    <div className="max-w-md mx-auto">
+                      <Progress value={uploadProgress} className="h-3 mb-2" />
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        {uploadProgress}% הושלם
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {uploadStep === 'complete' && (
+            <motion.div
+              key="complete"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+            >
+              <Card className="glass-effect border-0 shadow-2xl">
+                <CardContent className="p-12 text-center">
+                  <div className="space-y-6">
+                    <div className="w-24 h-24 mx-auto bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center">
+                      <CheckCircle className="w-12 h-12 text-white" />
+                    </div>
+
+                    <div>
+                      <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">
+                        התמלול הושלם בהצלחה!
+                      </h3>
+                      <p className="text-slate-600 dark:text-slate-300">
+                        כעת תוכל לערוך ולעצב את הכתוביות בסטודיו
+                      </p>
+                    </div>
+
+                    <div className="flex gap-4 justify-center">
                       <Button
+                        onClick={() => {
+                          setUploadStep('select');
+                          setSelectedFile(null);
+                          setTranscriptionId(null);
+                        }}
                         variant="outline"
-                        className="mt-3 border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-900/20"
                       >
-                        התחבר עכשיו
+                        העלה קובץ נוסף
+                      </Button>
+                      <Button
+                        onClick={openStudioPage} // ✅ קורא לפונקציה החדשה
+                        className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                      >
+                        <Wand2 className="w-4 h-4 mr-2" />
+                        עבור לסטודיו
                       </Button>
                     </div>
                   </div>
-                </motion.div>
-              )}
+                </CardContent>
+              </Card>
             </motion.div>
           )}
         </AnimatePresence>
